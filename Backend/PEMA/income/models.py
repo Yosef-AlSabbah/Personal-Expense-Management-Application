@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.db import models
+from simple_history.models import HistoricalRecords
 
 User = get_user_model()
 
@@ -17,6 +18,9 @@ class Income(models.Model):
 
     # Automatically updates whenever the instance is saved
     last_updated = models.DateTimeField(auto_now=True)
+
+    # Add historical records
+    history = HistoricalRecords()
 
     def __str__(self):
         """String representation of the income object, displaying user, amount, and date."""

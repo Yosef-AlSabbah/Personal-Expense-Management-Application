@@ -19,8 +19,8 @@ class ExpenseSerializer(serializers.ModelSerializer):
     """
     user = serializers.StringRelatedField(read_only=True)
 
-    # Nested serializer for category details
-    category = CategorySerializer(read_only=True)
+    # Use a primary key related field for category to allow writing
+    category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all(), required=True)
 
     class Meta:
         model = Expense

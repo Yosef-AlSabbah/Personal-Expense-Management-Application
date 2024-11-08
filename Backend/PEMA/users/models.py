@@ -1,7 +1,39 @@
 from django.contrib.auth import get_user_model
-from django.db import models
 
 User = get_user_model()
+
+from django.db import models
+from django.utils import timezone
+
+
+class ProfileManager(models.Manager):
+    def current_month_statistics(self, user):
+        """
+        Provides the monthly statistics for the given user:
+        - Total monthly expenses
+        - Remaining balance
+        - Average daily expenditure
+        """
+        today = timezone.now().date()
+        start_of_month = today.replace(day=1)
+
+        # Get user's expenses for the current month
+        expenses = user.expenses.filter(date__gte=start_of_month)
+        total_expenses = sum(expense.amount for expense in expenses)
+
+        # Calculate remaining balance
+        income = getattr(user, 'income', None)
+        remaining_balance = (income.amount if income else 0) - total_expenses
+
+        # Calculate average daily expenditure for the current month
+        days_in_month = today.day
+        average_daily_expense = total_expenses / days_in_month if days_in_month > 0 else 0
+
+        return {
+            "total_expenses": total_expenses,
+            "remaining_balance": remaining_balance,
+            "average_daily_expense": average_daily_expense,
+        }
 
 
 class Profile(models.Model):
@@ -12,6 +44,8 @@ class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
     balance = models.DecimalField(max_digits=10, decimal_places=2, default=0.0, help_text="User's current balance.")
     date_created = models.DateTimeField(auto_now_add=True)
+
+    objects = ProfileManager()
 
     def __str__(self):
         """String representation of the profile object, displaying the associated user's username."""

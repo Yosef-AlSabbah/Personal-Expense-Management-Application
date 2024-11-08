@@ -6,5 +6,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
 
     # Include API URLs under the 'api/' path
-    path('api/', include('api.urls'), namespace='api'),
+    path('api/', include('api.urls', namespace='api')),
 ]
