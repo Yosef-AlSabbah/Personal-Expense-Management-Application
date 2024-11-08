@@ -9,26 +9,23 @@ https://docs.djangoproject.com/en/5.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
-
+from datetime import timedelta
+from os import environ
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-km0g10%jx@f+rqsxg)wgop#3ie&gqnys41^9aa!iyv&ywyjoul'
+SECRET_KEY = environ.get('DJANGO_SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = environ.get('DEBUG') == '1'
 
 ALLOWED_HOSTS = []
-
-
-# Application definition
 
 INSTALLED_APPS = [
     # Django default apps
@@ -40,17 +37,17 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     # Third-party apps
-    'rest_framework',           # Django REST Framework for API development
-    'rest_framework.authtoken', # DRF Token authentication
-    'djoser',                   # Djoser for user authentication and management
-    'corsheaders',              # Django CORS headers for handling cross-origin requests
+    'rest_framework',
+    'rest_framework.authtoken',
+    'djoser',
+    'corsheaders',
 
     # Custom apps
-    'expenses',                 # Replace with the name of your custom app
-    'income',                   # Example app for managing expenses
-    'reports',                  # Example app for managing incomes
+    'expenses',
+    'income',
+    'reports',
+    'users'
 ]
-
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -63,6 +60,84 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'PEMA.urls'
+
+#      ╭──────────────────────────────────────────────────────────╮
+#      │                  Django Rest Framework                   │
+#      ╰──────────────────────────────────────────────────────────╯
+# ━━━━━━━━━━━━━━━━ THIS SECTION CONFIGURES THE REST FRAMEWORK SETTINGS. ━━━━━━━━━━━━━━━━
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        # Global permission to require authentication for all views
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 20,
+}
+
+#      ╭──────────────────────────────────────────────────────────╮
+#      │                   Email Configuration                    │
+#      ╰──────────────────────────────────────────────────────────╯
+# ━━ THIS SECTION CONFIGURES THE EMAIL BACKEND FOR SENDING EMAILS IN THE APPLICATION. ━━
+
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = environ.get('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = environ.get('EMAIL_HOST_PASSWORD')
+
+#      ╭──────────────────────────────────────────────────────────╮
+#      │                  Djoser configuration                    │
+#      ╰──────────────────────────────────────────────────────────╯
+# ━━━━━━━━━━━━ DJOSER CONFIGURATION FOR USER AUTHENTICATION AND MANAGEMENT ━━━━━━━━━━━━━
+DJOSER = {
+    'LOGIN_FIELD': 'email',  # Use email for login instead of username
+    'SEND_ACTIVATION_EMAIL': True,  # Send activation email upon registration
+    'SEND_CONFIRMATION_EMAIL': True,  # Send confirmation email for actions like password changes
+    'ACTIVATION_URL': 'activate/{uid}/{token}',  # URL endpoint for account activation
+
+    # URL endpoints for password reset and username reset confirmations
+    'PASSWORD_RESET_CONFIRM_URL': 'password/reset/confirm/{uid}/{token}',
+    'USERNAME_RESET_CONFIRM_URL': 'username/reset/confirm/{uid}/{token}',
+
+    'PASSWORD_RESET_SHOW_EMAIL': True,  # Show email in the password reset form
+    'USERNAME_CHANGED_EMAIL_CONFIRMATION': True,  # Send confirmation email if username is changed
+    'PASSWORD_CHANGED_EMAIL_CONFIRMATION': True,  # Send confirmation email if password is changed
+
+    # Require password retype during user creation for verification
+    'USER_CREATE_PASSWORD_RETYPE': True,
+}
+
+#      ╭──────────────────────────────────────────────────────────╮
+#      │       Configuration for JWT Authentication Tokens        │
+#      ╰──────────────────────────────────────────────────────────╯
+# ━━ THIS SECTION SETS THE DURATION FOR BOTH ACCESS AND REFRESH TOKENS IN THE APPLICATION, USING THE SIMPLE_JWT SETTINGS. ━━
+SIMPLE_JWT = {
+    # Sets the lifespan of the access token.
+    # After 15 minutes, the access token will expire, requiring the user to use the refresh token to obtain a new access token.
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
+
+    # Sets the lifespan of the refresh token.
+    # After 7 days, the refresh token will expire, requiring the user to re-authenticate to get a new refresh token.
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+}
+
+#      ╭──────────────────────────────────────────────────────────╮
+#      │                CORS ORIGIN CONFIGURATION                 │
+#      ╰──────────────────────────────────────────────────────────╯
+CORS_ALLOW_METHODS = (
+    "DELETE",
+    "GET",
+    "OPTIONS",
+    "PATCH",
+    "POST",
+    "PUT",
+)
 
 TEMPLATES = [
     {
@@ -83,7 +158,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'PEMA.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
@@ -93,7 +167,6 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -113,7 +186,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
 
@@ -124,7 +196,6 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 
 USE_TZ = True
-
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/

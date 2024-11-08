@@ -7,13 +7,15 @@ from ..models import Expense
 
 class ExpenseCreateView(CreateAPIView):
     """
-    View for creating an Expense entry.
-    Only allows creating new Expense records for authenticated users.
+    API view to create a new Expense entry.
+    Only authenticated users are permitted to create new Expense records.
     """
     queryset = Expense.objects.all()
     serializer_class = ExpenseSerializer
     permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
-        # Automatically assign the authenticated user as the owner of the expense
+        """
+        Assigns the authenticated user as the owner of the expense entry upon creation.
+        """
         serializer.save(user=self.request.user)

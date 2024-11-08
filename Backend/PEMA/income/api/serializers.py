@@ -20,11 +20,3 @@ class IncomeSerializer(serializers.ModelSerializer):
         if value <= 0:
             raise serializers.ValidationError("Income amount must be greater than zero.")
         return value
-
-    def to_representation(self, instance):
-        """
-        Custom representation to add a formatted description.
-        """
-        representation = super().to_representation(instance)
-        representation['formatted_description'] = f"{instance.user} received {instance.amount} on {instance.date}"
-        return representation

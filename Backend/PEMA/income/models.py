@@ -10,8 +10,10 @@ class Income(models.Model):
     Each user can only have one income entry.
     """
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="income")
-    amount = models.DecimalField(max_digits=10, decimal_places=2, help_text="Amount of income in the currency unit", default=0)
+    amount = models.DecimalField(max_digits=10, decimal_places=2, help_text="Amount of income in the currency unit",
+                                 default=0)
     date = models.DateField(auto_now_add=True)
+    description = models.TextField(blank=True, null=True)
 
     # Automatically updates whenever the instance is saved
     last_updated = models.DateTimeField(auto_now=True)

@@ -1,6 +1,8 @@
-from django.contrib.auth import get_user_model
+from collections import defaultdict
 
+from django.contrib.auth import get_user_model
 from django.db import models
+from django.utils import timezone
 
 User = get_user_model()
 
@@ -27,14 +29,11 @@ class Category(models.Model):
         verbose_name_plural = "Categories"
 
 
-from django.utils import timezone
-from collections import defaultdict
-
-
 class ExpenseManager(models.Manager):
-    def for_current_month(self, user):
+    def get_expenses_for_current_month(self, user):
         """
-        Returns all expenses for the given user in the current month.
+        Retrieves all expenses for the current month for a specified user.
+        Filters expenses by the authenticated user and the current year and month.
         """
         now = timezone.now()
         return self.filter(
@@ -45,9 +44,11 @@ class ExpenseManager(models.Manager):
 
     def get_expenses_by_category_for_current_month(self, user):
         """
-        Get the expenses of a given user for the current month, grouped by category.
+        Retrieves and groups expenses by category for the current month for a specified user.
+        This groups each expense by its category, creating a dictionary with category keys
+        and lists of expense instances as values.
         """
-        current_month_expenses = self.for_current_month(user)
+        current_month_expenses = self.get_expenses_for_current_month(user)
         expenses_by_category = defaultdict(list)
 
         for expense in current_month_expenses:
@@ -83,6 +84,4 @@ class Expense(models.Model):
     class Meta:
         # Orders expenses by date, with the most recent first
         ordering = ['-date']
-
-        # Clarifies plural form in the admin panel
         verbose_name_plural = "Expenses"

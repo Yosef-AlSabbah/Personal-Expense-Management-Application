@@ -3,8 +3,11 @@
 import os
 import sys
 
+from dotenv import read_dotenv
+
 
 def main():
+    read_dotenv()
     """Run administrative tasks."""
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'PEMA.settings')
     try:
