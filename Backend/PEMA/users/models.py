@@ -1,9 +1,11 @@
 from django.contrib.auth import get_user_model
-
-User = get_user_model()
-
 from django.db import models
 from django.utils import timezone
+from simple_history.models import HistoricalRecords
+
+from users.utils import get_unique_profile_pic_path
+
+User = get_user_model()
 
 
 class ProfileManager(models.Manager):
@@ -44,8 +46,13 @@ class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
     balance = models.DecimalField(max_digits=10, decimal_places=2, default=0.0, help_text="User's current balance.")
     date_created = models.DateTimeField(auto_now_add=True)
+    profile_pic = models.ImageField(upload_to=get_unique_profile_pic_path, blank=True, null=True,
+                                    help_text="User's profile picture.")
 
     objects = ProfileManager()
+
+    # Add historical records field to track changes
+    history = HistoricalRecords()
 
     def __str__(self):
         """String representation of the profile object, displaying the associated user's username."""
