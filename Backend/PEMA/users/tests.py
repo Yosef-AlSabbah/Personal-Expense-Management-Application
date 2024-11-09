@@ -8,6 +8,7 @@ from .models import Profile
 
 User = get_user_model()
 
+
 class UserProfileUpdateTestCase(TestCase):
     def setUp(self):
         # Set up a test user and profile
@@ -22,7 +23,7 @@ class UserProfileUpdateTestCase(TestCase):
         self.client = APIClient()
         self.client.force_authenticate(user=self.user)
 
-        self.update_url = reverse('api:users:profile-update')
+        self.update_url = reverse('api:users:profile-update')  # Adjust namespace if needed
 
     def test_update_profile_successfully(self):
         # Define the payload for updating the user profile
@@ -32,9 +33,7 @@ class UserProfileUpdateTestCase(TestCase):
                 "last_name": "User",
                 "email": "updateduser@example.com"
             },
-            "profile": {
-                "profile_pic": None  # Assuming no file is uploaded for simplicity
-            }
+            "profile_pic": None  # Assuming no file is uploaded for simplicity
         }
 
         response = self.client.put(self.update_url, payload, format='json')
@@ -61,9 +60,7 @@ class UserProfileUpdateTestCase(TestCase):
                 "last_name": "Name",
                 "email": "newname@example.com"
             },
-            "profile": {
-                "profile_pic": None
-            }
+            "profile_pic": None
         }
 
         response = self.client.put(self.update_url, payload, format='json')
@@ -78,9 +75,7 @@ class UserProfileUpdateTestCase(TestCase):
                 "last_name": "User",
                 "email": "not-an-email"
             },
-            "profile": {
-                "profile_pic": None
-            }
+            "profile_pic": None
         }
 
         response = self.client.put(self.update_url, payload, format='json')

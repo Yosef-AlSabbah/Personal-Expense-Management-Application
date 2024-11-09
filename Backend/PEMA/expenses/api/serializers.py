@@ -1,10 +1,11 @@
 from rest_framework import serializers
+
 from ..models import Category, Expense
 
 
 class CategorySerializer(serializers.ModelSerializer):
     """
-    Serializer for the Category model, including all fields with best practices in mind.
+    Serializer for the Category model, including all fields.
     """
 
     class Meta:
@@ -15,16 +16,22 @@ class CategorySerializer(serializers.ModelSerializer):
 
 class ExpenseSerializer(serializers.ModelSerializer):
     """
-    Serializer for the Expense model, including all necessary fields and following best practices.
+    Serializer for the Expense model, including all necessary fields with nested category details.
     """
     user = serializers.StringRelatedField(read_only=True)
+    category = CategorySerializer(read_only=True)  # Display category details
 
-    # Use a primary key related field for category to allow writing
-    category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all(), required=True)
+    # Allow updating category by ID
+    category_id = serializers.PrimaryKeyRelatedField(
+        source='category',
+        queryset=Category.objects.all(),
+        write_only=True,
+        required=True
+    )
 
     class Meta:
         model = Expense
-        fields = ['id', 'user', 'amount', 'date', 'category', 'description', 'summary']
+        fields = ['id', 'user', 'amount', 'date', 'category', 'category_id', 'description', 'summary']
         read_only_fields = ['id', 'user', 'date', 'summary']
 
     def validate_amount(self, value):

@@ -13,7 +13,7 @@ urlpatterns = [
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ ADMIN SITE URLS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     path('admin/', admin.site.urls),
 
-    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ API URLS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    # Include API URLs under the 'api/' path
-    path('api/', include('api.urls', namespace='api')),
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ API V1 URLS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    # All API endpoints are organized under 'api/v1/'
+    path('api/v1/', include('api.urls', namespace='api')),
 ]

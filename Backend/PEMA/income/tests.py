@@ -1,8 +1,9 @@
+from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
-from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.tokens import RefreshToken
+
 from .models import Income
 
 User = get_user_model()
@@ -13,23 +14,19 @@ class IncomeViewTest(APITestCase):
     Test case for creating and updating an Income entry for a user.
 
     Summary:
-    - `test_create_income_successful`: Tests the successful creation of an income entry.
-    - `test_create_income_duplicate`: Tests that duplicate income entries cannot be created for a user.
-    - `test_create_income_unauthenticated`: Tests that unauthenticated users cannot create income entries.
-    - `test_update_income_successful`: Tests the successful update of an existing income entry.
-    - `test_update_income_unauthenticated`: Tests that unauthenticated users cannot update an income entry.
-    - `test_update_income_does_not_exist`: Tests that updating an income fails if no income entry exists for the user.
+    - `test_create_income_successful`: Tests the creation or update of an income entry.
+    - `test_create_income_duplicate`: Tests that an existing income entry is updated instead of creating a duplicate.
+    - `test_create_income_unauthenticated`: Tests that unauthenticated users cannot access the income entry endpoint.
     """
 
     def setUp(self):
         """
-        Set up the test user which is required for creating and updating income entries.
+        Set up the test user required for creating and updating income entries.
         """
         # Create a test user
         self.user = User.objects.create_user(username='testuser', password='testpassword')
-        # Define URLs for income creation and update
-        self.create_url = reverse('api:income:create_income')
-        self.update_url = reverse('api:income:update_income')
+        # Define a single URL for income creation or update
+        self.income_url = reverse('api:income:create_or_update_income')
         # Generate JWT token for the user
         refresh = RefreshToken.for_user(self.user)
         self.access_token = str(refresh.access_token)
@@ -37,7 +34,7 @@ class IncomeViewTest(APITestCase):
 
     def test_create_income_successful(self):
         """
-        Test the successful creation of an income by an authenticated user.
+        Test the successful creation of an income entry by an authenticated user.
         """
         # Define the data to create a new income
         data = {
@@ -45,11 +42,11 @@ class IncomeViewTest(APITestCase):
             'description': 'Monthly salary'
         }
 
-        # Send a POST request to create an income
-        response = self.client.post(self.create_url, data)
+        # Send a PUT request to create or update the income
+        response = self.client.put(self.income_url, data)
 
-        # Assert the response status is HTTP 201 Created
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        # Assert the response status is HTTP 200 OK
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # Assert that the income object was created in the database
         self.assertEqual(Income.objects.count(), 1)
@@ -60,29 +57,34 @@ class IncomeViewTest(APITestCase):
 
     def test_create_income_duplicate(self):
         """
-        Test that an income cannot be created if one already exists for the user.
+        Test that an existing income entry is updated instead of creating a duplicate.
         """
         # Create an initial income entry for the user
         Income.objects.create(user=self.user, amount=5000.00, description='Monthly salary')
 
-        # Define the data to create a duplicate income
+        # Define the data to update the income
         data = {
             'amount': '6000.00',
             'description': 'Bonus'
         }
 
-        # Send a POST request to create a duplicate income
-        response = self.client.post(self.create_url, data)
+        # Send a PUT request to update the existing income
+        response = self.client.put(self.income_url, data)
 
-        # Assert the response status is HTTP 400 Bad Request
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        # Assert the response status is HTTP 200 OK
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # Assert that no additional income object was created in the database
         self.assertEqual(Income.objects.count(), 1)
 
+        # Refresh and verify that the income entry was updated
+        income = Income.objects.first()
+        self.assertEqual(income.amount, 6000.00)
+        self.assertEqual(income.description, 'Bonus')
+
     def test_create_income_unauthenticated(self):
         """
-        Test that unauthenticated users cannot create an income.
+        Test that unauthenticated users cannot create or update an income entry.
         """
         # Remove the credentials to simulate an unauthenticated request
         self.client.credentials()
@@ -93,8 +95,8 @@ class IncomeViewTest(APITestCase):
             'description': 'Freelance work'
         }
 
-        # Send a POST request to create an income
-        response = self.client.post(self.create_url, data)
+        # Send a PUT request to attempt to create or update the income
+        response = self.client.put(self.income_url, data)
 
         # Assert the response status is HTTP 401 Unauthorized
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
@@ -102,64 +104,19 @@ class IncomeViewTest(APITestCase):
         # Assert that no income object was created in the database
         self.assertEqual(Income.objects.count(), 0)
 
-    def test_update_income_successful(self):
+    def test_update_income_non_negative(self):
         """
-        Test the successful update of an existing income by an authenticated user.
+        Test that a negative income amount is rejected.
         """
-        # Create an initial income entry for the user
-        income = Income.objects.create(user=self.user, amount=5000.00, description='Monthly salary')
-
-        # Define the data to update the income
+        # Define data with a negative amount
         data = {
-            'amount': '6000.00',
-            'description': 'Updated salary'
+            'amount': '-1000.00',
+            'description': 'Negative income test'
         }
 
-        # Send a PUT request to update the income
-        response = self.client.put(self.update_url, data)
+        # Send a PUT request to attempt to create or update the income with a negative amount
+        response = self.client.put(self.income_url, data)
 
-        # Assert the response status is HTTP 200 OK
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        # Refresh the income instance from the database
-        income.refresh_from_db()
-        self.assertEqual(income.amount, 6000.00)
-        self.assertEqual(income.description, 'Updated salary')
-
-    def test_update_income_unauthenticated(self):
-        """
-        Test that unauthenticated users cannot update an income.
-        """
-        # Create an initial income entry for the user
-        Income.objects.create(user=self.user, amount=5000.00, description='Monthly salary')
-
-        # Remove the credentials to simulate an unauthenticated request
-        self.client.credentials()
-
-        # Define the data to update the income
-        data = {
-            'amount': '7000.00',
-            'description': 'Freelance payment'
-        }
-
-        # Send a PUT request to update the income
-        response = self.client.put(self.update_url, data)
-
-        # Assert the response status is HTTP 401 Unauthorized
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-
-    def test_update_income_does_not_exist(self):
-        """
-        Test that updating an income fails if no income exists for the user.
-        """
-        # Define the data to update the income
-        data = {
-            'amount': '8000.00',
-            'description': 'Freelance payment'
-        }
-
-        # Send a PUT request to update the income
-        response = self.client.put(self.update_url, data)
-
-        # Assert the response status is HTTP 400 Bad Request
+        # Assert the response status is HTTP 400 Bad Request due to validation
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('amount', response.data)

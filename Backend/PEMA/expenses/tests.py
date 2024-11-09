@@ -1,8 +1,9 @@
+from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
-from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.tokens import RefreshToken
+
 from .models import Expense, Category
 
 User = get_user_model()
@@ -39,10 +40,10 @@ class ExpenseCreateViewTest(APITestCase):
         """
         Test the successful creation of an expense by an authenticated user.
         """
-        # Define the data to create a new expense
+        # Define the data to create a new expense, using 'category_id' as expected by the serializer
         data = {
             'amount': '50.00',
-            'category': self.category.id,
+            'category_id': self.category.id,  # Use 'category_id' instead of 'category'
             'description': 'Lunch at a restaurant'
         }
 

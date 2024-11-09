@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
 
 from ..models import Profile
@@ -15,8 +16,13 @@ class UserSerializer(ModelSerializer):
 class ProfileSerializer(ModelSerializer):
     class Meta:
         model = Profile
-        # Balance is excluded
         fields = ['profile_pic']
+
+    def validate_profile_pic(self, value):
+        # Limit file size to 2MB
+        if value.size > 2 * 1024 * 1024:
+            raise serializers.ValidationError("Profile picture size should not exceed 2MB.")
+        return value
 
 
 class UserProfileUpdateSerializer(ModelSerializer):
@@ -27,18 +33,20 @@ class UserProfileUpdateSerializer(ModelSerializer):
         fields = ['user', 'profile_pic']
 
     def update(self, instance, validated_data):
-        # Separate out user data from the profile data
         user_data = validated_data.pop('user', {})
 
-        # Update user fields
+        # Update user data
         user = instance.user
         for attr, value in user_data.items():
             setattr(user, attr, value)
         user.save()
 
-        # Update profile fields (e.g., profile_pic)
+        # Update profile data
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
 
         return instance
+
+    def validate(self, attrs):
+        return attrs

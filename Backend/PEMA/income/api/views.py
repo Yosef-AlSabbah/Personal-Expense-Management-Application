@@ -1,37 +1,20 @@
-from rest_framework.exceptions import ValidationError
-from rest_framework.generics import CreateAPIView, UpdateAPIView
+from rest_framework.generics import RetrieveUpdateAPIView
 
 from .serializers import IncomeSerializer
 from ..models import Income
 
 
-class CreateIncomeView(CreateAPIView):
+class CreateOrUpdateIncomeView(RetrieveUpdateAPIView):
     """
-    View to create a new Income entry for the authenticated user.
-    Ensures that the user does not already have an income entry.
-    """
-    serializer_class = IncomeSerializer
-
-    def perform_create(self, serializer):
-        user = self.request.user
-        # Check if an Income instance already exists for the user
-        if Income.objects.filter(user=user).exists():
-            raise ValidationError("Income entry already exists for this user.")
-        # Save the new income entry with the user set
-        serializer.save(user=user)
-
-
-class UpdateIncomeView(UpdateAPIView):
-    """
-    View to update an existing Income entry for the authenticated user.
-    Ensures that an income entry exists before updating.
+    API view to create or update an Income entry for the authenticated user.
+    If an Income entry exists, it will be updated; otherwise, a new entry will be created.
     """
     serializer_class = IncomeSerializer
 
     def get_object(self):
+        """
+        Retrieves the Income object for the authenticated user, creating it if it does not exist.
+        """
         user = self.request.user
-        try:
-            # Retrieve the existing Income instance for the user
-            return Income.objects.get(user=user)
-        except Income.DoesNotExist:
-            raise ValidationError("Income entry does not exist for this user.")
+        income, created = Income.objects.get_or_create(user=user)
+        return income
