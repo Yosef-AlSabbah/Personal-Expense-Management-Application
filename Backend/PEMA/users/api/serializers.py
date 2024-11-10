@@ -12,6 +12,7 @@ class UserSerializer(ModelSerializer):
 
     class Meta:
         model = User
+        ref_name = "UserSerializer"
         fields = ['first_name', 'last_name', 'email']
         extra_kwargs = {
             'first_name': {'help_text': "User's first name."},
@@ -42,6 +43,9 @@ class UserProfileUpdateSerializer(ModelSerializer):
     """Serializer for updating user profile and related user information."""
 
     user = UserSerializer(help_text="User details (first name, last name, and email).")
+    profile_pic = serializers.ImageField(
+        help_text="Upload a profile picture (max size 2MB).", required=False
+    )
 
     class Meta:
         model = Profile
@@ -57,7 +61,11 @@ class UserProfileUpdateSerializer(ModelSerializer):
             setattr(user, attr, value)
         user.save()
 
-        # Update profile details
+        # Update profile_pic only if provided
+        if 'profile_pic' in validated_data:
+            instance.profile_pic = validated_data['profile_pic']
+
+        # Update other profile fields if needed
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
@@ -65,5 +73,8 @@ class UserProfileUpdateSerializer(ModelSerializer):
         return instance
 
     def validate(self, attrs):
-        """Custom validation logic for updating the profile."""
+        """Ensure only the owner of the profile can update it."""
+        request = self.context.get('request')
+        if request and request.user != self.instance.user:
+            raise serializers.ValidationError("You do not have permission to update this profile.")
         return attrs

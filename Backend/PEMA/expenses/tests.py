@@ -4,6 +4,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from users.models import Profile
 from .models import Expense, Category
 
 User = get_user_model()
@@ -19,47 +20,68 @@ class ExpenseCreateViewTest(APITestCase):
     - `test_create_expense_invalid_amount`: Tests that an expense with a non-positive amount cannot be created.
     - `test_create_expense_missing_category`: Tests that an expense cannot be created without specifying a category.
     - `test_create_expense_missing_amount`: Tests that an expense cannot be created without specifying an amount.
+    - `test_create_expense_insufficient_balance`: Tests that an expense cannot be created if the user's balance is insufficient.
     """
 
     def setUp(self):
         """
         Set up the test user and category, which are required for creating an expense.
         """
-        # Create a test user
+        # Create a test user and profile with initial balance
         self.user = User.objects.create_user(username='testuser', password='testpassword')
-        # Create a test category
+        self.profile = Profile.objects.create(user=self.user, balance=100.00)  # Set initial balance
         self.category = Category.objects.create(name='Food', description='Expenses related to food')
-        # Define the URL for the expense creation
         self.url = reverse('api:expenses:expense-create')
-        # Generate JWT token for the user
         refresh = RefreshToken.for_user(self.user)
         self.access_token = str(refresh.access_token)
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.access_token}')
 
     def test_create_expense_successful(self):
-        """
-        Test the successful creation of an expense by an authenticated user.
-        """
-        # Define the data to create a new expense, using 'category_id' as expected by the serializer
+        """Test the successful creation of an expense by an authenticated user."""
         data = {
             'amount': '50.00',
-            'category_id': self.category.id,  # Use 'category_id' instead of 'category'
+            'category_id': self.category.id,
             'description': 'Lunch at a restaurant'
         }
-
-        # Send a POST request to create an expense
         response = self.client.post(self.url, data)
-
-        # Assert the response status is HTTP 201 Created
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-
-        # Assert that the expense object was created in the database
         self.assertEqual(Expense.objects.count(), 1)
         expense = Expense.objects.first()
         self.assertEqual(expense.amount, 50.00)
         self.assertEqual(expense.user, self.user)
         self.assertEqual(expense.category, self.category)
         self.assertEqual(expense.description, 'Lunch at a restaurant')
+
+    def test_create_expense_insufficient_balance(self):
+        """
+        Test that an expense cannot be created if the user's balance is insufficient.
+        """
+        data = {
+            'amount': '150.00',  # Amount exceeds user's balance
+            'category_id': self.category.id,
+            'description': 'Expensive dinner'
+        }
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("Insufficient balance", str(response.data))  # Check for the error message
+        self.assertEqual(Expense.objects.count(), 0)
+
+    def test_create_expense_sufficient_balance(self):
+        """
+        Test that an expense can be created if the user's balance is sufficient.
+        """
+        data = {
+            'amount': '50.00',  # Amount within user's balance
+            'category_id': self.category.id,
+            'description': 'Affordable dinner'
+        }
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Expense.objects.count(), 1)
+
+        # Verify that balance is updated correctly
+        self.profile.refresh_from_db()  # Reload profile to get updated balance
+        self.assertEqual(self.profile.balance, 50.00)  # Balance after deduction
 
     def test_create_expense_unauthenticated(self):
         """

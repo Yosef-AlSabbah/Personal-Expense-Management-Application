@@ -1,7 +1,9 @@
+from decimal import Decimal
+
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
+from rest_framework.exceptions import ValidationError
 from rest_framework.generics import CreateAPIView
-from rest_framework.permissions import IsAuthenticated
 
 from .serializers import ExpenseSerializer
 from ..models import Expense
@@ -14,7 +16,6 @@ class ExpenseCreateView(CreateAPIView):
     """
     serializer_class = ExpenseSerializer
     queryset = Expense.objects.all()
-    permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
         operation_summary="Create a New Expense",
@@ -32,5 +33,20 @@ class ExpenseCreateView(CreateAPIView):
         return self.create(request, *args, **kwargs)
 
     def perform_create(self, serializer):
-        """Assign the authenticated user as the owner of the expense entry upon creation."""
-        serializer.save(user=self.request.user)
+        """Assign the authenticated user as the owner of the expense entry upon creation,
+        and ensure the user's balance can cover the expense.
+        """
+        user = self.request.user
+        profile = user.profile  # Access the user's profile for balance checking
+        amount = serializer.validated_data['amount']
+
+        # Check if the user's balance can cover the expense amount
+        if profile.balance < amount:
+            raise ValidationError("Insufficient balance to cover this expense.")
+
+        # Deduct the expense from balance and save the profile
+        profile.balance -= Decimal(amount)
+        profile.save()
+
+        # Save the expense with the associated user
+        serializer.save(user=user)

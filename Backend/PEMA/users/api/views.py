@@ -3,7 +3,6 @@ from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import UpdateAPIView
-from rest_framework.permissions import IsAuthenticated
 
 from .serializers import UserProfileUpdateSerializer
 from ..models import Profile
@@ -18,7 +17,6 @@ class UserProfileUpdateView(UpdateAPIView):
     """
     queryset = Profile.objects.all()
     serializer_class = UserProfileUpdateSerializer
-    permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
         operation_description="Updates the authenticated user's profile with full data (PUT) or partial data (PATCH).",

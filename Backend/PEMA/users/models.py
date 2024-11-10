@@ -56,7 +56,7 @@ class Profile(models.Model):
 
     def __str__(self):
         """String representation of the profile object, displaying the associated user's username."""
-        return f'Profile of {self.user.name}'
+        return f'Profile of {self.user.username}'
 
     def update_balance(self):
         """

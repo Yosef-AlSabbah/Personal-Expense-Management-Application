@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'djoser',
+    'drf_yasg',
     'corsheaders',
     'simple_history',
 
@@ -74,6 +75,11 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         # Global permission to require authentication for all views
         'rest_framework.permissions.IsAuthenticated',
+    ],
+    'DEFAULT_PARSER_CLASSES': [
+        'rest_framework.parsers.JSONParser',
+        'rest_framework.parsers.MultiPartParser',
+        'rest_framework.parsers.FormParser',
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
@@ -128,6 +134,18 @@ SIMPLE_JWT = {
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
 }
 
+SWAGGER_SETTINGS = {
+    'SECURITY_DEFINITIONS': {
+        'Bearer': {
+            'type': 'apiKey',
+            'name': 'Authorization',
+            'in': 'header',
+            'description': "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
+        }
+    },
+    'USE_SESSION_AUTH': False,  # Ensures Swagger doesn't default to session authentication
+}
+
 #      ╭──────────────────────────────────────────────────────────╮
 #      │                CORS ORIGIN CONFIGURATION                 │
 #      ╰──────────────────────────────────────────────────────────╯
@@ -159,13 +177,32 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'PEMA.wsgi.application'
 
+#      ╭──────────────────────────────────────────────────────────╮
+#      │                    DATABASES SECTION                     │
+#      ╰──────────────────────────────────────────────────────────╯
+
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
+# ━━━━━━━━━━━━━━━━━━━━━━━ DEFAULT SQLITE DATABASE CONFIGURATION ━━━━━━━━━━━━━━━━━━━━━━━━
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━ POSTGRESQL DATABASE CONFIGURATION ━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': environ.get('DB_NAME'),
+        'USER': environ.get('DB_USER'),
+        'PASSWORD': environ.get('DB_PASSWORD'),
+        'HOST': environ.get('DB_HOST'),
+        'PORT': environ.get('DB_PORT'),
     }
 }
 
@@ -207,3 +244,5 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+LOGIN_URL = '/jwt/create/'

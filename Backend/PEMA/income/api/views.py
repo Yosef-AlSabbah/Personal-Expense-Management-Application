@@ -1,31 +1,18 @@
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework.generics import RetrieveUpdateAPIView
+from rest_framework.exceptions import ValidationError
+from rest_framework.generics import UpdateAPIView
 
+from users.models import Profile
 from .serializers import IncomeSerializer
 from ..models import Income
 
 
-class CreateOrUpdateIncomeView(RetrieveUpdateAPIView):
+class UpdateIncomeView(UpdateAPIView):
     """
-    API view to create or update an Income entry for the authenticated user.
-    If an Income entry exists, it will be updated; otherwise, a new entry will be created.
+    API view to update an existing Income entry for the authenticated user.
     """
     serializer_class = IncomeSerializer
-
-    @swagger_auto_schema(
-        operation_summary="Retrieve or Create Income Entry",
-        operation_description="Retrieve the authenticated user's income entry. If it doesn't exist, create a new entry.",
-        tags=["Income"],
-        responses={
-            200: IncomeSerializer,
-            201: openapi.Response("Income entry created successfully.", IncomeSerializer),
-            403: openapi.Response("Forbidden - Authentication required")
-        }
-    )
-    def get(self, request, *args, **kwargs):
-        """Retrieve or create the income entry for the authenticated user."""
-        return self.retrieve(request, *args, **kwargs)
 
     @swagger_auto_schema(
         operation_summary="Update Income Entry",
@@ -58,7 +45,23 @@ class CreateOrUpdateIncomeView(RetrieveUpdateAPIView):
         return self.partial_update(request, *args, **kwargs)
 
     def get_object(self):
-        """Retrieve or create the Income object for the authenticated user."""
+        """Retrieve the Income object for the authenticated user, or raise an error if not found."""
         user = self.request.user
-        income, created = Income.objects.get_or_create(user=user)
-        return income
+        try:
+            return Income.objects.get(user=user)
+        except Income.DoesNotExist:
+            raise ValidationError("Income entry does not exist for this user.")
+
+    def update(self, request, *args, **kwargs):
+        """Override to check for changes in the income amount and update profile balance if needed."""
+        instance = self.get_object()
+        previous_amount = instance.amount
+        response = super().update(request, *args, **kwargs)
+        new_amount = response.data.get("amount")
+
+        if new_amount != previous_amount:
+            # Update the profile balance if income amount has changed
+            profile = Profile.objects.get(user=request.user)
+            profile.update_balance()
+
+        return response

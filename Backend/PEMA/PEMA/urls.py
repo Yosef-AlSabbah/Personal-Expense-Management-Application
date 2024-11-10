@@ -2,8 +2,7 @@ from django.contrib import admin
 from django.urls import path, include
 from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
-
-from api.permissions import IsAdminOrForbidden
+from rest_framework.permissions import AllowAny
 
 # Define schema view for Swagger and ReDoc
 schema_view = get_schema_view(
@@ -18,7 +17,7 @@ schema_view = get_schema_view(
     public=True,
 
     # Allow only admins access to the documentation
-    permission_classes=[IsAdminOrForbidden],
+    permission_classes=[AllowAny],
 )
 
 urlpatterns = [

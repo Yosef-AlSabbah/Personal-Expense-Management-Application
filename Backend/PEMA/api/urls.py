@@ -6,7 +6,7 @@ app_name = 'api'
 urlpatterns = [
     # Authentication URLs
     # These include JWT token management routes under 'auth/'
-    path('auth/', include('users.api.urls', namespace='auth')),
+    path('users/', include('users.api.urls', namespace='auth')),
 
     # Expenses URLs
     # Organized under 'expenses/' with a specific namespace

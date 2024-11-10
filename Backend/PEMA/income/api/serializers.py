@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 
 from ..models import Income
 
@@ -42,5 +43,5 @@ class IncomeSerializer(serializers.ModelSerializer):
     def validate_amount(self, value):
         """Ensure the income amount is positive."""
         if value <= 0:
-            raise serializers.ValidationError("Income amount must be greater than zero.")
+            raise ValidationError("Income amount must be greater than zero.")
         return value
