@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from djoser.serializers import UserCreateSerializer as BaseUserCreateSerializer
 from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
 
@@ -7,17 +8,40 @@ from ..models import Profile
 User = get_user_model()
 
 
-class UserSerializer(ModelSerializer):
-    """Serializer for user information, used within profile-related serializers."""
+class UserCreateSerializer(BaseUserCreateSerializer):
+    """
+    Serializer for creating a new user account.
+    Includes only fields needed for registration.
+    """
+
+    class Meta(BaseUserCreateSerializer.Meta):
+        model = User
+        fields = ('email', 'first_name', 'last_name', 'password', 'phone_number')
+        extra_kwargs = {
+            'username': {'help_text': "User's username MUST be UNIQUE."},
+            'email': {'help_text': "User's email address MUST be UNIQUE."},
+            'first_name': {'help_text': "User's first name."},
+            'last_name': {'help_text': "User's last name."},
+            'phone_number': {'help_text': "User's phone number."}
+        }
+
+
+class UserDetailSerializer(ModelSerializer):
+    """
+    Serializer for retrieving user information.
+    Excludes sensitive fields like password for security.
+    """
 
     class Meta:
         model = User
-        ref_name = "UserSerializer"
-        fields = ['first_name', 'last_name', 'email']
+        ref_name = "UserDetailSerializer"
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'phone_number']
         extra_kwargs = {
+            'username': {'help_text': "User's username."},
+            'email': {'help_text': "User's email address."},
             'first_name': {'help_text': "User's first name."},
             'last_name': {'help_text': "User's last name."},
-            'email': {'help_text': "User's email address."}
+            'phone_number': {'help_text': "User's phone number."}
         }
 
 
@@ -42,7 +66,7 @@ class ProfileSerializer(ModelSerializer):
 class UserProfileUpdateSerializer(ModelSerializer):
     """Serializer for updating user profile and related user information."""
 
-    user = UserSerializer(help_text="User details (first name, last name, and email).")
+    user = UserDetailSerializer(help_text="User details (username, email, first name, last name, and phone number).")
     profile_pic = serializers.ImageField(
         help_text="Upload a profile picture (max size 2MB).", required=False
     )

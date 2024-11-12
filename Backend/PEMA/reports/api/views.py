@@ -19,8 +19,8 @@ class ExpenseReportView(ListAPIView):
     serializer_class = ExpenseSerializer
 
     @swagger_auto_schema(
-        operation_description="Retrieve a list of expenses for the current month.",
         operation_summary="List Monthly Expenses",
+        operation_description="Retrieve a list of expenses for the current month.",
         tags=["Expenses"],
         responses={
             200: openapi.Response(

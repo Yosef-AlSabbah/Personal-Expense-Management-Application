@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'drf_yasg',
     'corsheaders',
     'simple_history',
+    'django_celery_beat',
 
     # Custom apps
     'expenses',
@@ -103,6 +104,9 @@ EMAIL_HOST_PASSWORD = environ.get('EMAIL_HOST_PASSWORD')
 #      ╰──────────────────────────────────────────────────────────╯
 # ━━━━━━━━━━━━ DJOSER CONFIGURATION FOR USER AUTHENTICATION AND MANAGEMENT ━━━━━━━━━━━━━
 DJOSER = {
+    'EMAIL': {
+        'activation': 'users/activation.html',
+    },
     'LOGIN_FIELD': 'email',  # Use email for login instead of username
     'SEND_ACTIVATION_EMAIL': True,  # Send activation email upon registration
     'SEND_CONFIRMATION_EMAIL': True,  # Send confirmation email for actions like password changes
@@ -157,6 +161,13 @@ CORS_ALLOW_METHODS = (
     "POST",
     "PUT",
 )
+
+#      ╭──────────────────────────────────────────────────────────╮
+#      │        DJANGO CORN JOBS SCHEDULING CONFIGURATION         │
+#      ╰──────────────────────────────────────────────────────────╯
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
 TEMPLATES = [
     {
@@ -246,3 +257,7 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 LOGIN_URL = '/jwt/create/'
+
+# AUTH_USER_MODEL = 'users.CustomUser'
+USERNAME_FIELD = 'email'
+
