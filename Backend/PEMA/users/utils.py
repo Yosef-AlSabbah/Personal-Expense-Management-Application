@@ -9,7 +9,7 @@ def get_unique_profile_pic_path(instance, filename):
     """
     # Extract the file extension from the original filename
     ext = splitext(filename)[1]
-    # Generate a unique filename using UUID
+    # Generate a unique filename using a UUID to prevent file name conflicts
     unique_filename = f"{uuid4()}{ext}"
-    # Construct the path where the file will be saved
+    # Construct the file path under the 'profile_pics' directory
     return join('profile_pics', unique_filename)

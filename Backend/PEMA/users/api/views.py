@@ -52,11 +52,18 @@ class UserProfileUpdateView(UpdateAPIView):
 
     def get_object(self):
         """Retrieve the profile instance associated with the authenticated user."""
+        # Ensure that the request user has a profile, otherwise raise an error
+        if not hasattr(self.request.user, 'profile'):
+            raise ValidationError({"detail": "User profile does not exist."})
         return self.request.user.profile
 
     def perform_update(self, serializer):
-        """Save the updated profile data and handle validation errors."""
+        """
+        Save the updated profile data and handle validation errors.
+        Catches profile-specific errors and raises them as response errors.
+        """
         try:
             serializer.save()
         except ValidationError as e:
-            raise ValidationError({"detail": "Failed to update profile. Error: " + str(e)})
+            # Provide a detailed message for profile update issues
+            raise ValidationError({"detail": f"Failed to update profile. Error: {str(e)}"})

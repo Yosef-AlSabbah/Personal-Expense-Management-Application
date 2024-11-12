@@ -60,7 +60,7 @@ class ExpenseCategoryReportView(ListAPIView):
     )
     def list(self, request, *args, **kwargs):
         """Return expenses grouped by category for the current month."""
-        expenses_by_category = Expense.objects.get_expenses_by_category_for_current_month(user=request.user)
+        expenses_by_category = request.user.objects.get_expenses_by_category_for_current_month(request.user)
         data = {str(category): ExpenseSerializer(expenses, many=True).data
                 for category, expenses in expenses_by_category.items()}
         return Response(data)

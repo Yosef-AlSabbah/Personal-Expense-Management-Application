@@ -27,30 +27,38 @@ DEBUG = environ.get('DEBUG') == '1'
 
 ALLOWED_HOSTS = []
 
-INSTALLED_APPS = [
-    # Django default apps
+# Django default apps
+DJANGO_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-
-    # Third-party apps
-    'rest_framework',
-    'rest_framework.authtoken',
-    'djoser',
-    'drf_yasg',
-    'corsheaders',
-    'simple_history',
-    'django_celery_beat',
-
-    # Custom apps
-    'expenses',
-    'income',
-    'reports',
-    'users'
 ]
+
+# Third-party apps
+THIRD_PARTY_APPS = [
+    'rest_framework',  # Django REST framework
+    'rest_framework.authtoken',  # Token authentication for DRF
+    'djoser',  # Authentication-related endpoints
+    'rest_framework_simplejwt',  # Jason Web Token for authentication
+    'drf_yasg',  # Swagger for API documentation
+    'corsheaders',  # Cross-Origin Resource Sharing headers
+    'simple_history',  # Historical tracking for models
+    'django_celery_beat',  # Periodic task scheduler with Celery
+]
+
+# Custom project apps
+CUSTOM_APPS = [
+    'users',  # Custom user app for managing authentication and profiles
+    'expenses',  # App for expense tracking
+    'income',  # App for managing income records
+    'reports',  # App for generating reports
+]
+
+# Combine all app lists into INSTALLED_APPS
+INSTALLED_APPS = DJANGO_APPS + CUSTOM_APPS + THIRD_PARTY_APPS
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -91,6 +99,8 @@ REST_FRAMEWORK = {
 #      ╰──────────────────────────────────────────────────────────╯
 # ━━ THIS SECTION CONFIGURES THE EMAIL BACKEND FOR SENDING EMAILS IN THE APPLICATION. ━━
 
+from django.core.mail import send_mail
+from django.conf import settings
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
@@ -105,7 +115,15 @@ EMAIL_HOST_PASSWORD = environ.get('EMAIL_HOST_PASSWORD')
 # ━━━━━━━━━━━━ DJOSER CONFIGURATION FOR USER AUTHENTICATION AND MANAGEMENT ━━━━━━━━━━━━━
 DJOSER = {
     'EMAIL': {
-        'activation': 'users/activation.html',
+        'activation': 'users.emails.CustomActivationEmail',
+    },
+    # Specifies the custom serializers
+    'SERIALIZERS': {
+        'user_create': 'users.api.serializers.UserCreateSerializer',
+        'user': 'users.api.serializers.UserDetailSerializer',
+        'user_update': 'users.api.serializers.UserProfileUpdateSerializer',
+        'current_user': 'users.api.serializers.UserDetailSerializer',
+        'token_create': 'rest_framework_simplejwt.serializers.TokenObtainPairSerializer',
     },
     'LOGIN_FIELD': 'email',  # Use email for login instead of username
     'SEND_ACTIVATION_EMAIL': True,  # Send activation email upon registration
@@ -136,6 +154,14 @@ SIMPLE_JWT = {
     # Sets the lifespan of the refresh token.
     # After 7 days, the refresh token will expire, requiring the user to re-authenticate to get a new refresh token.
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+
+    # Defines the class used for authentication tokens, specifying AccessToken here
+    # as the type of token used by Simple JWT.
+    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+
+    # Customizes the serializer used when obtaining tokens, allowing additional claims or custom behavior.
+    # This points to a custom serializer that adds extra fields (like is_verified) to the token payload.
+    'TOKEN_OBTAIN_SERIALIZER': 'users.api.serializers.CustomTokenObtainPairSerializer',
 }
 
 SWAGGER_SETTINGS = {
@@ -147,7 +173,7 @@ SWAGGER_SETTINGS = {
             'description': "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
         }
     },
-    'USE_SESSION_AUTH': False,  # Ensures Swagger doesn't default to session authentication
+    'USE_SESSION_AUTH': False,
 }
 
 #      ╭──────────────────────────────────────────────────────────╮
@@ -258,6 +284,5 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 LOGIN_URL = '/jwt/create/'
 
-# AUTH_USER_MODEL = 'users.CustomUser'
+AUTH_USER_MODEL = 'users.UserAccount'
 USERNAME_FIELD = 'email'
-
