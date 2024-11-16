@@ -1,69 +1,97 @@
-from django.contrib.auth import get_user_model
-from drf_yasg import openapi
-from drf_yasg.utils import swagger_auto_schema
-from rest_framework.exceptions import ValidationError
-from rest_framework.generics import UpdateAPIView
+from drf_spectacular.utils import OpenApiResponse, extend_schema
+from rest_framework import status
+from rest_framework.generics import RetrieveUpdateAPIView, CreateAPIView, DestroyAPIView
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework_simplejwt.tokens import RefreshToken
 
-from .serializers import UserProfileUpdateSerializer
-from ..models import Profile
-
-User = get_user_model()
+from .serializers import UserProfileSerializer, RefreshTokenSerializer
+from ..permissions import IsOwnerOrAdmin
 
 
-class UserProfileUpdateView(UpdateAPIView):
+class CurrentUserProfileView(RetrieveUpdateAPIView):
     """
-    API view to update the profile information of the authenticated user.
-    Allows updating the user's details and profile picture.
+    View for retrieving or updating the current user's profile.
     """
-    queryset = Profile.objects.all()
-    serializer_class = UserProfileUpdateSerializer
+    serializer_class = UserProfileSerializer
+    permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
 
-    @swagger_auto_schema(
-        operation_description="Updates the authenticated user's profile with full data (PUT) or partial data (PATCH).",
-        operation_summary="Update User Profile",
+    @extend_schema(
+        operation_id="retrieve_or_update_profile",
+        description="Retrieve or update the authenticated user's profile.",
         tags=["User Profile"],
-        request_body=UserProfileUpdateSerializer,
         responses={
-            200: UserProfileUpdateSerializer,
-            400: openapi.Response("Validation Error"),
-            403: openapi.Response("Forbidden - Authentication required"),
-            500: openapi.Response("Server error")
-        }
+            200: UserProfileSerializer,
+            403: OpenApiResponse(description="Permission Denied"),
+        },
     )
-    def put(self, request, *args, **kwargs):
-        """Handle PUT requests to update full profile data."""
-        return self.update(request, *args, **kwargs)
+    def get(self, request, *args, **kwargs):
+        # Handle GET request to retrieve the user's profile information
+        return super().get(request, *args, **kwargs)
 
-    @swagger_auto_schema(
-        operation_description="Partially updates the authenticated user's profile with provided fields only.",
-        operation_summary="Partial Update User Profile",
+    @extend_schema(
+        operation_id="update_profile",
+        description="Update the authenticated user's profile.",
         tags=["User Profile"],
-        request_body=UserProfileUpdateSerializer,
         responses={
-            200: UserProfileUpdateSerializer,
-            400: openapi.Response("Validation Error"),
-            403: openapi.Response("Forbidden - Authentication required"),
-            500: openapi.Response("Server error")
-        }
+            200: UserProfileSerializer,
+            400: OpenApiResponse(description="Validation Error"),
+            403: OpenApiResponse(description="Permission Denied"),
+        },
     )
     def patch(self, request, *args, **kwargs):
-        """Handle PATCH requests to partially update profile data."""
-        return self.partial_update(request, *args, **kwargs)
+        # Handle PATCH request to update the user's profile information
+        return super().patch(request, *args, **kwargs)
 
     def get_object(self):
-        """Retrieve the profile instance associated with the authenticated user."""
-        # Ensure that the request user has a profile, otherwise raise an error
-        if not hasattr(self.request.user, 'profile'):
-            raise ValidationError({"detail": "User profile does not exist."})
+        # Return the profile of the authenticated user
         return self.request.user.profile
 
-    def perform_update(self, serializer):
-        """
-        Save the updated profile data and handle validation errors.
-        Catches profile-specific errors and raises them as response errors.
-        """
+
+class UserCreateView(CreateAPIView):
+    """
+    View for creating a new user and their profile.
+    """
+    serializer_class = UserProfileSerializer
+    permission_classes = []  # No authentication required to create a new user
+
+    @extend_schema(
+        operation_id="register_user",
+        description="Register a new user with their profile.",
+        tags=["User Registration"],
+        responses={
+            201: UserProfileSerializer,
+            400: OpenApiResponse(description="Validation Error"),
+        },
+    )
+    def post(self, request, *args, **kwargs):
+        # Handle POST request to create a new user and their profile
+        return super().post(request, *args, **kwargs)
+
+
+class TokenDestroyView(DestroyAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = RefreshTokenSerializer  # Set the serializer here
+
+    @extend_schema(
+        operation_id="logout_user",
+        description="Log out the user by blacklisting their refresh token.",
+        tags=["User Authentication"],
+        responses={
+            205: OpenApiResponse(description="Successfully logged out"),
+            400: OpenApiResponse(description="Invalid Token"),
+        }
+    )
+    def destroy(self, request, *args, **kwargs):
         try:
-            serializer.save()
-        except ValidationError as e:
-            # Provide a detailed message for profile update issues
-            raise ValidationError({"detail": f"Failed to update profile. Error: {str(e)}"})
+            # Validate the request data using the serializer
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+
+            refresh_token = serializer.validated_data["refresh"]
+            token = RefreshToken(refresh_token)
+            token.blacklist()  # Blacklist the refresh token to log the user out
+            return Response({"message": "Successfully logged out"}, status=status.HTTP_205_RESET_CONTENT)
+        except Exception as e:
+            # Return error response if token is invalid or other issues occur
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)

@@ -1,0 +1,24 @@
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+from rest_framework.permissions import AllowAny
+
+# Configuration for drf-spectacular similar to previous drf-yasg settings
+schema_view = SpectacularSwaggerView.as_view(
+    url_name='schema',
+    permission_classes=[AllowAny],  # Allow any user to view the documentation
+    public=True
+)
+
+schema = SpectacularAPIView.as_view(
+    permission_classes=[AllowAny],
+    public=True,
+    title="Personal Expense Management Backend API Documentation",
+    version="v1",
+    description="API documentation for Personal Expense Management",
+    terms_of_service="https://www.google.com/policies/terms/",
+    contact={
+        "email": "yalsabbah@students.iugaza.edu.ps"
+    },
+    license={
+        "name": "MIT License"
+    },
+)

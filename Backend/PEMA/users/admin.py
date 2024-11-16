@@ -16,8 +16,8 @@ class UserAccountAdmin(BaseUserAdmin):
     Admin view for the UserAccount model with enhanced visibility and control over user details.
     """
     # Fields to display in the user list
-    list_display = ('email', 'username', 'is_verified', 'is_active', 'is_staff', 'date_joined')
-    list_filter = ('is_active', 'is_verified', 'is_staff', 'is_manager', 'is_admin')
+    list_display = ('id', 'email', 'username', 'is_active', 'is_staff', 'date_joined')
+    list_filter = ('is_active', 'is_staff', 'is_manager', 'is_admin')
 
     # Fields to enable search by email and username
     search_fields = ('email', 'username')
@@ -26,7 +26,7 @@ class UserAccountAdmin(BaseUserAdmin):
     fieldsets = (
         (None, {'fields': ('email', 'username', 'password')}),
         ('Personal Info', {'fields': ('first_name', 'last_name', 'phone_number', 'bio', 'profile_image')}),
-        ('Permissions', {'fields': ('is_verified', 'is_active', 'is_staff', 'is_manager', 'is_admin')}),
+        ('Permissions', {'fields': ('is_active', 'is_staff', 'is_manager', 'is_admin')}),
         ('Important dates', {'fields': ('last_login', 'date_joined')}),
         ('Advanced options', {
             'classes': ('collapse',),
@@ -39,8 +39,8 @@ class UserAccountAdmin(BaseUserAdmin):
         (None, {
             'classes': ('wide',),
             'fields': (
-            'email', 'username', 'first_name', 'last_name', 'phone_number', 'password1', 'password2', 'is_active',
-            'is_staff', 'is_superuser'),
+                'email', 'username', 'first_name', 'last_name', 'phone_number', 'password1', 'password2', 'is_active',
+                'is_staff', 'is_superuser'),
         }),
     )
 

@@ -43,7 +43,8 @@ THIRD_PARTY_APPS = [
     'rest_framework.authtoken',  # Token authentication for DRF
     'djoser',  # Authentication-related endpoints
     'rest_framework_simplejwt',  # Jason Web Token for authentication
-    'drf_yasg',  # Swagger for API documentation
+    'rest_framework_simplejwt.token_blacklist',
+    'drf_spectacular',  # Spectacular for API documentation
     'corsheaders',  # Cross-Origin Resource Sharing headers
     'simple_history',  # Historical tracking for models
     'django_celery_beat',  # Periodic task scheduler with Celery
@@ -90,6 +91,7 @@ REST_FRAMEWORK = {
         'rest_framework.parsers.MultiPartParser',
         'rest_framework.parsers.FormParser',
     ],
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
 }
@@ -114,16 +116,19 @@ EMAIL_HOST_PASSWORD = environ.get('EMAIL_HOST_PASSWORD')
 #      ╰──────────────────────────────────────────────────────────╯
 # ━━━━━━━━━━━━ DJOSER CONFIGURATION FOR USER AUTHENTICATION AND MANAGEMENT ━━━━━━━━━━━━━
 DJOSER = {
-    'EMAIL': {
-        'activation': 'users.emails.CustomActivationEmail',
+    'PERMISSIONS': {
+        'user': ['users.permissions.IsOwnerOrAdmin'],  # For access and update
+        'user_delete': ['users.permissions.IsOwnerOrAdmin'],  # For deletion
+        'user_update': ['users.permissions.IsOwnerOrAdmin'],  # For deletion
+        'user_list': ['rest_framework.permissions.IsAdminUser'],  # For listing
+        'user_detail': ['rest_framework.permissions.IsAdminUser'],  # For details
+        'user_create': ['users.permissions.IsNotAuthenticated'],  # For details
     },
+    'HIDE_USERS': True,
     # Specifies the custom serializers
     'SERIALIZERS': {
-        'user_create': 'users.api.serializers.UserCreateSerializer',
-        'user': 'users.api.serializers.UserDetailSerializer',
-        'user_update': 'users.api.serializers.UserProfileUpdateSerializer',
-        'current_user': 'users.api.serializers.UserDetailSerializer',
-        'token_create': 'rest_framework_simplejwt.serializers.TokenObtainPairSerializer',
+        'user_create': 'users.api.serializers.UserProfileSerializer',  # Register user with profile
+        # 'user': 'users.api.serializers.UserProfileSerializer',  # View user details
     },
     'LOGIN_FIELD': 'email',  # Use email for login instead of username
     'SEND_ACTIVATION_EMAIL': True,  # Send activation email upon registration
@@ -159,9 +164,8 @@ SIMPLE_JWT = {
     # as the type of token used by Simple JWT.
     'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
 
-    # Customizes the serializer used when obtaining tokens, allowing additional claims or custom behavior.
-    # This points to a custom serializer that adds extra fields (like is_verified) to the token payload.
-    'TOKEN_OBTAIN_SERIALIZER': 'users.api.serializers.CustomTokenObtainPairSerializer',
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
 }
 
 SWAGGER_SETTINGS = {

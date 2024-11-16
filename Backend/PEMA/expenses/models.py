@@ -42,7 +42,7 @@ class ExpenseManager(models.Manager):
             date__month=now.month
         )
 
-    def get_expenses_by_category_for_current_month(self, user):
+    def get_expenses_by_category_for_current_month(self, user=None):
         """
         Retrieves and groups expenses by category for the current month for a specified user.
         This groups each expense by its category, creating a dictionary with category keys

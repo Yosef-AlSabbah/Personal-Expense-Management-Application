@@ -1,7 +1,6 @@
 from decimal import Decimal
 
-from drf_yasg import openapi
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema, OpenApiResponse
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import CreateAPIView
 
@@ -17,15 +16,15 @@ class ExpenseCreateView(CreateAPIView):
     serializer_class = ExpenseSerializer
     queryset = Expense.objects.all()
 
-    @swagger_auto_schema(
-        operation_summary="Create a New Expense",
-        operation_description="Allows authenticated users to create a new expense entry. Requires category ID and amount.",
+    @extend_schema(
+        summary="Create a New Expense",
+        description="Allows authenticated users to create a new expense entry. Requires category ID and amount.",
         tags=["Expenses"],
-        request_body=ExpenseSerializer,
+        request=ExpenseSerializer,
         responses={
-            201: openapi.Response("Expense created successfully.", ExpenseSerializer),
-            400: openapi.Response("Validation error"),
-            403: openapi.Response("Forbidden - Authentication required"),
+            201: OpenApiResponse(description="Expense created successfully.", response=ExpenseSerializer),
+            400: OpenApiResponse(description="Validation error"),
+            403: OpenApiResponse(description="Forbidden - Authentication required"),
         }
     )
     def post(self, request, *args, **kwargs):

@@ -1,5 +1,4 @@
-from drf_yasg import openapi
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema, OpenApiResponse
 from rest_framework.generics import ListAPIView, get_object_or_404
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
@@ -18,16 +17,16 @@ class ExpenseReportView(ListAPIView):
     """
     serializer_class = ExpenseSerializer
 
-    @swagger_auto_schema(
-        operation_summary="List Monthly Expenses",
-        operation_description="Retrieve a list of expenses for the current month.",
+    @extend_schema(
+        summary="List Monthly Expenses",
+        description="Retrieve a list of expenses for the current month.",
         tags=["Expenses"],
         responses={
-            200: openapi.Response(
+            200: OpenApiResponse(
                 description="A list of expenses for the current month",
-                schema=ExpenseSerializer(many=True)
+                response=ExpenseSerializer(many=True)
             ),
-            403: openapi.Response("Forbidden - Authentication required")
+            403: OpenApiResponse(description="Forbidden - Authentication required")
         }
     )
     def get_queryset(self):
@@ -42,25 +41,27 @@ class ExpenseCategoryReportView(ListAPIView):
     """
     serializer_class = ExpenseSerializer
 
-    @swagger_auto_schema(
-        operation_description="Retrieve categorized expenses for the current month.",
-        operation_summary="List Categorized Monthly Expenses",
+    @extend_schema(
+        summary="List Categorized Monthly Expenses",
+        description="Retrieve categorized expenses for the current month.",
         tags=["Expenses"],
         responses={
-            200: openapi.Response(
+            200: OpenApiResponse(
                 description="A dictionary of expenses categorized by type for the current month",
-                schema=openapi.Schema(
-                    type=openapi.TYPE_OBJECT,
-                    additional_properties=openapi.Schema(type=openapi.TYPE_ARRAY,
-                                                         items=openapi.Items(type=openapi.TYPE_OBJECT))
-                )
+                response={
+                    'type': 'object',
+                    'additionalProperties': {
+                        'type': 'array',
+                        'items': ExpenseSerializer
+                    }
+                }
             ),
-            403: openapi.Response("Forbidden - Authentication required")
+            403: OpenApiResponse(description="Forbidden - Authentication required")
         }
     )
     def list(self, request, *args, **kwargs):
         """Return expenses grouped by category for the current month."""
-        expenses_by_category = request.user.objects.get_expenses_by_category_for_current_month(request.user)
+        expenses_by_category = request.user.expenses.get_expenses_by_category_for_current_month()
         data = {str(category): ExpenseSerializer(expenses, many=True).data
                 for category, expenses in expenses_by_category.items()}
         return Response(data)
@@ -72,16 +73,16 @@ class MonthlyStatisticsView(APIView):
     Returns total expenses, remaining balance, and average daily expenditure.
     """
 
-    @swagger_auto_schema(
-        operation_description="Retrieve monthly statistics including total expenses, remaining balance, and average daily expenditure.",
-        operation_summary="Monthly Financial Statistics",
+    @extend_schema(
+        summary="Monthly Financial Statistics",
+        description="Retrieve monthly statistics including total expenses, remaining balance, and average daily expenditure.",
         tags=["Reports"],
         responses={
-            200: openapi.Response(
+            200: OpenApiResponse(
                 description="Monthly financial statistics",
-                schema=MonthlyStatisticsSerializer
+                response=MonthlyStatisticsSerializer
             ),
-            403: openapi.Response("Forbidden - Authentication required")
+            403: OpenApiResponse(description="Forbidden - Authentication required")
         }
     )
     def get(self, request, *args, **kwargs):

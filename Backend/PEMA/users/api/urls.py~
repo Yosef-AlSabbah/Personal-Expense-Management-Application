@@ -1,0 +1,18 @@
+from django.urls import path, include
+from rest_framework_simplejwt import views
+
+from users.api.views import TokenDestroyView
+
+app_name = 'auth'
+
+urlpatterns = [
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ AUTH URLS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    # Djoser URLs for login, registration, etc.
+    path('', include('djoser.urls')),
+
+    path("token/obtain/", views.TokenObtainPairView.as_view(), name="jwt-create"),
+    path("token/refresh/", views.TokenRefreshView.as_view(), name="jwt-refresh"),
+    path("token/verify/", views.TokenVerifyView.as_view(), name="jwt-verify"),
+
+    path('token/destroy/', TokenDestroyView.as_view(), name='jwt-destroy'),
+]

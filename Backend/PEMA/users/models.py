@@ -135,7 +135,6 @@ class UserAccount(AbstractBaseUser, PermissionsMixin):
     last_login = models.DateTimeField(_('last login'), auto_now=True)
     date_joined = models.DateTimeField(_('date joined'), default=timezone.now)
 
-    is_verified = models.BooleanField(_('verified'), default=False)
     is_active = models.BooleanField(_('active'), default=True)
     is_staff = models.BooleanField(_('staff status'), default=False)
     is_manager = models.BooleanField(_('manager status'), default=False)
@@ -169,3 +168,4 @@ class UserAccount(AbstractBaseUser, PermissionsMixin):
     class Meta:
         verbose_name = _('user')
         verbose_name_plural = _('users')
+        ordering = ['-pk']

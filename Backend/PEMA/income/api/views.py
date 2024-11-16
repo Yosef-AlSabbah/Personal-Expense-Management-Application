@@ -1,5 +1,4 @@
-from drf_yasg import openapi
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema, OpenApiResponse
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import UpdateAPIView
 
@@ -14,30 +13,30 @@ class UpdateIncomeView(UpdateAPIView):
     """
     serializer_class = IncomeSerializer
 
-    @swagger_auto_schema(
-        operation_summary="Update Income Entry",
-        operation_description="Update the authenticated user's income entry with the provided data.",
+    @extend_schema(
+        summary="Update Income Entry",
+        description="Update the authenticated user's income entry with the provided data.",
         tags=["Income"],
-        request_body=IncomeSerializer,
+        request=IncomeSerializer,
         responses={
-            200: openapi.Response("Income entry updated successfully.", IncomeSerializer),
-            400: openapi.Response("Validation error"),
-            403: openapi.Response("Forbidden - Authentication required"),
+            200: OpenApiResponse(description="Income entry updated successfully.", response=IncomeSerializer),
+            400: OpenApiResponse(description="Validation error"),
+            403: OpenApiResponse(description="Forbidden - Authentication required"),
         }
     )
     def put(self, request, *args, **kwargs):
         """Handle PUT requests to update income data for the authenticated user."""
         return self.update(request, *args, **kwargs)
 
-    @swagger_auto_schema(
-        operation_summary="Partial Update Income Entry",
-        operation_description="Partially update the authenticated user's income entry with the provided fields.",
+    @extend_schema(
+        summary="Partial Update Income Entry",
+        description="Partially update the authenticated user's income entry with the provided fields.",
         tags=["Income"],
-        request_body=IncomeSerializer,
+        request=IncomeSerializer,
         responses={
-            200: openapi.Response("Income entry partially updated successfully.", IncomeSerializer),
-            400: openapi.Response("Validation error"),
-            403: openapi.Response("Forbidden - Authentication required"),
+            200: OpenApiResponse(description="Income entry partially updated successfully.", response=IncomeSerializer),
+            400: OpenApiResponse(description="Validation error"),
+            403: OpenApiResponse(description="Forbidden - Authentication required"),
         }
     )
     def patch(self, request, *args, **kwargs):

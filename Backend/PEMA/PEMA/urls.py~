@@ -1,0 +1,36 @@
+from django.contrib import admin
+from django.urls import path, include
+# Define schema view for Swagger and ReDoc
+from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
+from rest_framework.permissions import AllowAny
+
+from users.views import activate_account
+
+# API schema view using drf-spectacular
+schema_view = SpectacularAPIView.as_view()
+
+# Swagger documentation view
+swagger_view = SpectacularSwaggerView.as_view(
+    url_name='schema',
+    # permission_classes=[IsAdminUser],  # Allow only admins access to the documentation
+    permission_classes=[AllowAny],
+)
+
+# Redoc documentation view (optional)
+redoc_view = SpectacularRedocView.as_view(
+    url_name='schema',
+    # permission_classes=[IsAdminUser],  # Allow only admins access to the documentation
+    permission_classes=[AllowAny],
+)
+
+urlpatterns = [
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ ADMIN SITE URLS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    path('admin/', admin.site.urls),
+
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ API V1 URLS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    path('api/v1/', include('api.urls', namespace='api')),
+
+
+    # ━━━━━━━━━━━━━━━━━━━━━━━ TEMP URL UNTIL FRONT-END IS AVAILABLE ━━━━━━━━━━━━━━━━━━━━━━━━
+    path('activate/<str:uid>/<str:token>/', activate_account, name='activate_account'),
+]

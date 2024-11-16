@@ -1,10 +1,11 @@
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
+from rest_framework.serializers import ModelSerializer
 
 from ..models import Income
 
 
-class IncomeSerializer(serializers.ModelSerializer):
+class IncomeSerializer(ModelSerializer):
     """
     Serializer for the Income model, including all fields with validation.
     """
@@ -15,7 +16,7 @@ class IncomeSerializer(serializers.ModelSerializer):
     amount = serializers.DecimalField(
         max_digits=10,
         decimal_places=2,
-        help_text="The amount of income. Must be greater than zero."
+        help_text="The amount of income. Must be greater than zero.",
     )
     date = serializers.DateField(
         read_only=True,

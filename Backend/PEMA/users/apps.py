@@ -8,6 +8,7 @@ class UsersConfig(AppConfig):
     name = 'users'
 
     def ready(self):
+        import users.signals
         User = get_user_model()
 
         # Add historical records field to track changes
