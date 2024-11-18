@@ -72,7 +72,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
         profile_pic = validated_data.pop("profile_pic", None)
 
         # Update User fields
-        user = instance.user
+        user = self.context["request"].user
         for attr, value in user_data.items():
             if attr == "password":
                 user.set_password(value)
@@ -92,4 +92,4 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
 
 class RefreshTokenSerializer(serializers.Serializer):
-    refresh = serializers.CharField()
+    refresh = serializers.CharField(required=True, help_text="Refresh token to be blacklisted")

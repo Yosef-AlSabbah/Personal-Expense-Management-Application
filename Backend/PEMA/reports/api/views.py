@@ -1,3 +1,4 @@
+from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 from rest_framework.generics import ListAPIView, get_object_or_404
 from rest_framework.response import Response
@@ -10,55 +11,43 @@ from reports.api.serializers import MonthlyStatisticsSerializer
 from users.models import Profile
 
 
+@extend_schema(
+    summary="List Monthly Expenses",
+    description="Retrieve a list of expenses for the current month.",
+    tags=["Reports"],
+    responses={
+        200: OpenApiResponse(
+            description="A list of expenses for the current month",
+            response=ExpenseSerializer(many=True)
+        ),
+        403: OpenApiResponse(description="Forbidden - Authentication required")
+    }
+)
 class ExpenseReportView(ListAPIView):
-    """
-    API view to retrieve a list of expenses for the current month.
-    Allows authenticated users to view their own expenses within the current month.
-    """
+    """API view to retrieve a list of expenses for the current month."""
     serializer_class = ExpenseSerializer
 
-    @extend_schema(
-        summary="List Monthly Expenses",
-        description="Retrieve a list of expenses for the current month.",
-        tags=["Expenses"],
-        responses={
-            200: OpenApiResponse(
-                description="A list of expenses for the current month",
-                response=ExpenseSerializer(many=True)
-            ),
-            403: OpenApiResponse(description="Forbidden - Authentication required")
-        }
-    )
     def get_queryset(self):
         """Retrieve expenses for the authenticated user within the current month."""
         return Expense.objects.get_expenses_for_current_month(user=self.request.user)
 
 
+@extend_schema(
+    summary="List Categorized Monthly Expenses",
+    description="Retrieve categorized expenses for the current month.",
+    tags=["Reports"],
+    responses={
+        200: OpenApiResponse(
+            description="A dictionary of expenses categorized by type for the current month",
+            response=OpenApiTypes.OBJECT  # Updated to use OpenApiTypes for flexibility
+        ),
+        403: OpenApiResponse(description="Forbidden - Authentication required")
+    }
+)
 class ExpenseCategoryReportView(ListAPIView):
-    """
-    API view to retrieve categorized expenses for the current month.
-    Groups expenses by category, allowing authenticated users to view categorized reports.
-    """
+    """API view to retrieve categorized expenses for the current month."""
     serializer_class = ExpenseSerializer
 
-    @extend_schema(
-        summary="List Categorized Monthly Expenses",
-        description="Retrieve categorized expenses for the current month.",
-        tags=["Expenses"],
-        responses={
-            200: OpenApiResponse(
-                description="A dictionary of expenses categorized by type for the current month",
-                response={
-                    'type': 'object',
-                    'additionalProperties': {
-                        'type': 'array',
-                        'items': ExpenseSerializer
-                    }
-                }
-            ),
-            403: OpenApiResponse(description="Forbidden - Authentication required")
-        }
-    )
     def list(self, request, *args, **kwargs):
         """Return expenses grouped by category for the current month."""
         expenses_by_category = request.user.expenses.get_expenses_by_category_for_current_month()

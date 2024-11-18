@@ -116,19 +116,19 @@ EMAIL_HOST_PASSWORD = environ.get('EMAIL_HOST_PASSWORD')
 #      ╰──────────────────────────────────────────────────────────╯
 # ━━━━━━━━━━━━ DJOSER CONFIGURATION FOR USER AUTHENTICATION AND MANAGEMENT ━━━━━━━━━━━━━
 DJOSER = {
-    'PERMISSIONS': {
-        'user': ['users.permissions.IsOwnerOrAdmin'],  # For access and update
-        'user_delete': ['users.permissions.IsOwnerOrAdmin'],  # For deletion
-        'user_update': ['users.permissions.IsOwnerOrAdmin'],  # For deletion
-        'user_list': ['rest_framework.permissions.IsAdminUser'],  # For listing
-        'user_detail': ['rest_framework.permissions.IsAdminUser'],  # For details
-        'user_create': ['users.permissions.IsNotAuthenticated'],  # For details
-    },
+    # 'PERMISSIONS': {
+    #     'user': ['users.permissions.IsOwnerOrAdmin'],  # For access and update
+    #     'user_delete': ['users.permissions.IsOwnerOrAdmin'],  # For deletion
+    #     'user_update': ['users.permissions.IsOwnerOrAdmin'],  # For deletion
+    #     'user_list': ['rest_framework.permissions.IsAdminUser'],  # For listing
+    #     'user_detail': ['rest_framework.permissions.IsAdminUser'],  # For details
+    #     'user_create': ['users.permissions.IsNotAuthenticated'],  # For details
+    # },
     'HIDE_USERS': True,
     # Specifies the custom serializers
     'SERIALIZERS': {
         'user_create': 'users.api.serializers.UserProfileSerializer',  # Register user with profile
-        # 'user': 'users.api.serializers.UserProfileSerializer',  # View user details
+        'user_delete': 'djoser.serializers.UserDeleteSerializer',
     },
     'LOGIN_FIELD': 'email',  # Use email for login instead of username
     'SEND_ACTIVATION_EMAIL': True,  # Send activation email upon registration
@@ -166,6 +166,60 @@ SIMPLE_JWT = {
 
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "PEMA API Documentation",
+    "DESCRIPTION": "A backend-only API solution for managing personal finances with secure JWT authentication. Users can track income, categorize expenses (e.g., transport, food), and retrieve monthly summaries and insights. This backend allows for seamless integration of secure personal finance tracking into apps, enabling informed budgeting.",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": True,  # Enables schema serving at runtime
+    "SCHEMA_PATH_PREFIX": "/api/v1",  # Filter paths for the documented schema
+
+    # Enforce strict validation and clean documentation
+    "SORT_OPERATIONS": True,  # Sort operations alphabetically by path and method
+    "SORT_SCHEMA_BY_TAGS": True,  # Sort schema tags alphabetically
+    "ENUM_NAME_OVERRIDES": {},  # Customize enum names if needed
+    "COMPONENT_SPLIT_REQUEST": False,  # Avoid splitting components for requests and responses unnecessarily
+
+    # Ensure compatibility with DELETE methods accepting body payloads
+    "ENABLE_DELETE_METHODS_WITH_BODY": True,
+    # "ENABLE_DELETE_METHODS_WITH_BODY": False,
+
+    # Tags and grouping
+    "TAGS": [
+        {
+            "name": "User Management",
+            "description": "Endpoints for managing user profiles, accounts, and related data."
+        },
+        {
+            "name": "User Authentication",
+            "description": "Endpoints for user login, logout, and authentication."
+        },
+        {
+            "name": "Expenses",
+            "description": "Endpoints for managing user expenses."
+        },
+        {
+            "name": "Income",
+            "description": "Endpoints for managing user income."
+        },
+        {
+            "name": "Reports",
+            "description": "Endpoints for generating financial reports."
+        },
+    ],
+    # Authentication configuration
+    "SECURITY": [
+        {"bearerAuth": []},  # Assuming you're using Bearer/Token-based authentication
+    ],
+
+    # Default pagination
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "DEFAULT_PAGE_SIZE": 10,  # Change as per your API's use case
+
+    # Deprecation warnings
+    "APPEND_PATH_TO_TAGS": False,  # Do not append path to tags; keeps tags clean
+    "SCHEMA_EXTENSIONS": [],  # Add custom schema extensions if needed
 }
 
 SWAGGER_SETTINGS = {
