@@ -4,6 +4,7 @@ from drf_spectacular.utils import extend_schema, OpenApiResponse
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import CreateAPIView
 
+from PEMA.utils.response_wrapper import custom_response
 from .serializers import ExpenseSerializer
 from ..models import Expense
 
@@ -29,7 +30,28 @@ class ExpenseCreateView(CreateAPIView):
     )
     def post(self, request, *args, **kwargs):
         """Handle POST requests to create a new expense entry."""
-        return self.create(request, *args, **kwargs)
+        try:
+            response = self.create(request, *args, **kwargs)
+            return custom_response(
+                status="success",
+                message="Expense created successfully.",
+                data=response.data,
+                status_code=response.status_code,
+            )
+        except ValidationError as e:
+            return custom_response(
+                status="error",
+                message="Validation error",
+                data={"errors": e.detail},
+                status_code=400,
+            )
+        except Exception as e:
+            return custom_response(
+                status="error",
+                message="An unexpected error occurred.",
+                data={"errors": str(e)},
+                status_code=500,
+            )
 
     def perform_create(self, serializer):
         """Assign the authenticated user as the owner of the expense entry upon creation,

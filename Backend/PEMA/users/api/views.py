@@ -3,19 +3,15 @@ from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
-from rest_framework.generics import RetrieveUpdateAPIView
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import (
     TokenObtainPairView as BaseTokenObtainPairView,
     TokenRefreshView as BaseTokenRefreshView,
-    TokenVerifyView as BaseTokenVerifyView,
+    TokenVerifyView as BaseTokenVerifyView, TokenBlacklistView,
 )
 
+from PEMA.utils.response_wrapper import custom_response
 from .serializers import UserProfileSerializer, RefreshTokenSerializer
-from ..permissions import IsOwnerOrAdmin
 
 
 class UserViewSet(BaseUserViewSet):
@@ -65,19 +61,30 @@ class UserViewSet(BaseUserViewSet):
     )
     @action(detail=False, methods=['get', 'put', 'patch', 'delete'])
     def me(self, request, *args, **kwargs):
-        if request.method == 'GET':
+        if request.method == "GET":
             serializer = self.get_serializer(request.user)
-            return Response(serializer.data)
-        elif request.method in ['PUT', 'PATCH']:
-            partial = request.method == 'PATCH'
-            serializer = self.get_serializer(request.user, data=request.data, partial=partial)
+            return custom_response(
+                status="success", message="Profile retrieved", data=serializer.data
+            )
+        elif request.method in ["PUT", "PATCH"]:
+            partial = request.method == "PATCH"
+            serializer = self.get_serializer(
+                request.user, data=request.data, partial=partial
+            )
             serializer.is_valid(raise_exception=True)
             self.perform_update(serializer)
-            return Response(serializer.data)
-        elif request.method == 'DELETE':
+            return custom_response(
+                status="success", message="Profile updated", data=serializer.data
+            )
+        elif request.method == "DELETE":
             user = request.user
             user.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
+            return custom_response(
+                status="success",
+                message="Profile deleted",
+                data=None,
+                status_code=status.HTTP_204_NO_CONTENT,
+            )
 
     @extend_schema(
         operation_id="user_register",
@@ -90,7 +97,13 @@ class UserViewSet(BaseUserViewSet):
         }
     )
     def create(self, request, *args, **kwargs):
-        return super().create(request, *args, **kwargs)
+        response = super().create(request, *args, **kwargs)
+        return custom_response(
+            status="success",
+            message="User successfully registered",
+            data=response.data,
+            status_code=response.status_code,
+        )
 
     @extend_schema(
         operation_id="user_activate",
@@ -103,7 +116,13 @@ class UserViewSet(BaseUserViewSet):
         }
     )
     def activation(self, request, *args, **kwargs):
-        return super().activation(request, *args, **kwargs)
+        response = super().activation(request, *args, **kwargs)
+        return custom_response(
+            status="success",
+            message="Account successfully activated",
+            data=response.data,
+            status_code=response.status_code,
+        )
 
     @extend_schema(
         operation_id="user_set_password",
@@ -116,7 +135,13 @@ class UserViewSet(BaseUserViewSet):
         }
     )
     def set_password(self, request, *args, **kwargs):
-        return super().set_password(request, *args, **kwargs)
+        response = super().set_password(request, *args, **kwargs)
+        return custom_response(
+            status="success",
+            message="Password successfully updated",
+            data=response.data,
+            status_code=response.status_code,
+        )
 
     @extend_schema(
         operation_id="user_reset_password",
@@ -129,7 +154,13 @@ class UserViewSet(BaseUserViewSet):
         }
     )
     def reset_password(self, request, *args, **kwargs):
-        return super().reset_password(request, *args, **kwargs)
+        response = super().reset_password(request, *args, **kwargs)
+        return custom_response(
+            status="success",
+            message="Password reset email sent",
+            data=response.data,
+            status_code=response.status_code,
+        )
 
     @extend_schema(
         operation_id="user_reset_password_confirm",
@@ -142,7 +173,13 @@ class UserViewSet(BaseUserViewSet):
         }
     )
     def reset_password_confirm(self, request, *args, **kwargs):
-        return super().reset_password_confirm(request, *args, **kwargs)
+        response = super().reset_password_confirm(request, *args, **kwargs)
+        return custom_response(
+            status="success",
+            message="Password successfully reset",
+            data=response.data,
+            status_code=response.status_code,
+        )
 
 
 # Extending existing token views
@@ -157,7 +194,13 @@ class TokenObtainPairView(BaseTokenObtainPairView):
         }
     )
     def post(self, request, *args, **kwargs):
-        return super().post(request, *args, **kwargs)
+        response = super().post(request, *args, **kwargs)
+        return custom_response(
+            status="success",
+            message="Token successfully obtained",
+            data=response.data,
+            status_code=response.status_code,
+        )
 
 
 class TokenRefreshView(BaseTokenRefreshView):
@@ -171,7 +214,13 @@ class TokenRefreshView(BaseTokenRefreshView):
         }
     )
     def post(self, request, *args, **kwargs):
-        return super().post(request, *args, **kwargs)
+        response = super().post(request, *args, **kwargs)
+        return custom_response(
+            status="success",
+            message="Access token successfully refreshed",
+            data=response.data,
+            status_code=response.status_code,
+        )
 
 
 class TokenVerifyView(BaseTokenVerifyView):
@@ -185,78 +234,58 @@ class TokenVerifyView(BaseTokenVerifyView):
         }
     )
     def post(self, request, *args, **kwargs):
-        return super().post(request, *args, **kwargs)
+        response = super().post(request, *args, **kwargs)
+        return custom_response(
+            status="success",
+            message="Token is valid",
+            data=response.data,
+            status_code=response.status_code,
+        )
 
 
-class CurrentUserProfileView(RetrieveUpdateAPIView):
-    """
-    View for retrieving or updating the current user's profile.
-    """
-    serializer_class = UserProfileSerializer
-    permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
-
-    @extend_schema(
-        operation_id="retrieve_or_update_profile",
-        description="Retrieve or update the authenticated user's profile.",
-        tags=["User Profile"],
-        responses={
-            200: UserProfileSerializer,
-            403: OpenApiResponse(description="Permission Denied"),
-        },
-    )
-    def get(self, request, *args, **kwargs):
-        # Handle GET request to retrieve the user's profile information
-        return super().get(request, *args, **kwargs)
-
-    @extend_schema(
-        operation_id="update_profile",
-        description="Update the authenticated user's profile.",
-        tags=["User Profile"],
-        responses={
-            200: UserProfileSerializer,
-            400: OpenApiResponse(description="Validation Error"),
-            403: OpenApiResponse(description="Permission Denied"),
-        },
-    )
-    def patch(self, request, *args, **kwargs):
-        # Handle PATCH request to update the user's profile information
-        return super().patch(request, *args, **kwargs)
-
-    def get_object(self):
-        # Return the profile of the authenticated user
-        return self.request.user.profile
-
-
-class TokenDestroyView(APIView):
-    """
-    Custom view to handle token destruction (logout).
-    """
+class TokenDestroyView(TokenBlacklistView):
+    serializer_class = RefreshTokenSerializer
 
     @extend_schema(
         operation_id="logout_user",
         description="Log out the user by blacklisting their refresh token.",
         tags=["User Authentication"],
-        request=RefreshTokenSerializer,  # Explicitly specify the request schema
+        request=RefreshTokenSerializer,
         responses={
             205: OpenApiResponse(description="Successfully logged out"),
             400: OpenApiResponse(description="Invalid Token"),
         },
     )
-    def post(self, request, *args, **kwargs):  # Using POST explicitly
-        serializer = RefreshTokenSerializer(data=request.data)  # Use serializer directly
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
         try:
             serializer.is_valid(raise_exception=True)
             refresh_token = serializer.validated_data["refresh"]
             token = RefreshToken(refresh_token)
             token.blacklist()
-            return Response(
-                {"message": "Successfully logged out"},
-                status=status.HTTP_205_RESET_CONTENT,
+            return custom_response(
+                {
+                    "status": "success",
+                    "message": "Successfully logged out",
+                    "data": None
+                },
+                status_code=status.HTTP_200_OK,
             )
         except ValidationError as e:
-            return Response({"error": e.detail}, status=status.HTTP_400_BAD_REQUEST)
+            return custom_response(
+                {
+                    "status": "error",
+                    "message": "Validation error",
+                    "data": {"errors": e.detail},
+                },
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
         except Exception:
-            return Response(
-                {"error": "Invalid token or request format"},
-                status=status.HTTP_400_BAD_REQUEST,
+            return custom_response(
+                {
+                    "status": "error",
+                    "message": "Invalid token or request format",
+                    "data": None,
+                },
+                status_code=status.HTTP_400_BAD_REQUEST,
             )

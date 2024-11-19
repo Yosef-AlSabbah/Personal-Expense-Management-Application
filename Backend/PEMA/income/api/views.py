@@ -1,7 +1,9 @@
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import UpdateAPIView
+from rest_framework.response import Response
 
+from PEMA.utils.response_wrapper import custom_response
 from users.models import Profile
 from .serializers import IncomeSerializer
 from ..models import Income
@@ -26,7 +28,8 @@ class UpdateIncomeView(UpdateAPIView):
     )
     def put(self, request, *args, **kwargs):
         """Handle PUT requests to update income data for the authenticated user."""
-        return self.update(request, *args, **kwargs)
+        response = self.update(request, *args, **kwargs)
+        return Response(response.data)
 
     @extend_schema(
         summary="Partial Update Income Entry",
@@ -41,7 +44,8 @@ class UpdateIncomeView(UpdateAPIView):
     )
     def patch(self, request, *args, **kwargs):
         """Handle PATCH requests to partially update income data for the authenticated user."""
-        return self.partial_update(request, *args, **kwargs)
+        response = self.partial_update(request, *args, **kwargs)
+        return Response(response.data)
 
     def get_object(self):
         """Retrieve the Income object for the authenticated user, or raise an error if not found."""
@@ -49,7 +53,10 @@ class UpdateIncomeView(UpdateAPIView):
         try:
             return Income.objects.get(user=user)
         except Income.DoesNotExist:
-            raise ValidationError("Income entry does not exist for this user.")
+            raise ValidationError(
+                detail={"error": "Income entry does not exist for this user."},
+                code="income_not_found"
+            )
 
     def update(self, request, *args, **kwargs):
         """Override to check for changes in the income amount and update profile balance if needed."""
@@ -63,4 +70,9 @@ class UpdateIncomeView(UpdateAPIView):
             profile = Profile.objects.get(user=request.user)
             profile.update_balance()
 
-        return response
+        return custom_response(
+            status="success",
+            message="Income entry updated and profile balance adjusted.",
+            data=response.data,
+            status_code=response.status_code,
+        )

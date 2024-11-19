@@ -2,10 +2,10 @@ from django.urls import path
 
 from users.api.views import (
     UserViewSet,
-    TokenDestroyView,
     TokenObtainPairView,
     TokenRefreshView,
-    TokenVerifyView
+    TokenVerifyView,
+    TokenDestroyView,
 )
 
 app_name = 'auth'

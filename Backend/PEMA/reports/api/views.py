@@ -1,10 +1,10 @@
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 from rest_framework.generics import ListAPIView, get_object_or_404
-from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
 from rest_framework.views import APIView
 
+from PEMA.utils.response_wrapper import custom_response
 from expenses.api.serializers import ExpenseSerializer
 from expenses.models import Expense
 from reports.api.serializers import MonthlyStatisticsSerializer
@@ -31,6 +31,16 @@ class ExpenseReportView(ListAPIView):
         """Retrieve expenses for the authenticated user within the current month."""
         return Expense.objects.get_expenses_for_current_month(user=self.request.user)
 
+    def list(self, request, *args, **kwargs):
+        """Custom response for the list of expenses."""
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return custom_response(
+            status="success",
+            message="Monthly expenses retrieved successfully",
+            data=serializer.data
+        )
+
 
 @extend_schema(
     summary="List Categorized Monthly Expenses",
@@ -50,10 +60,14 @@ class ExpenseCategoryReportView(ListAPIView):
 
     def list(self, request, *args, **kwargs):
         """Return expenses grouped by category for the current month."""
-        expenses_by_category = request.user.expenses.get_expenses_by_category_for_current_month()
+        expenses_by_category = request.user.expenses.get_expenses_by_category_for_current_month(user=self.request.user)
         data = {str(category): ExpenseSerializer(expenses, many=True).data
                 for category, expenses in expenses_by_category.items()}
-        return Response(data)
+        return custom_response(
+            status="success",
+            message="Categorized monthly expenses retrieved successfully",
+            data=data
+        )
 
 
 class MonthlyStatisticsView(APIView):
@@ -79,4 +93,9 @@ class MonthlyStatisticsView(APIView):
         profile = get_object_or_404(Profile, user=request.user)
         stats = Profile.objects.current_month_statistics(user=request.user)
         serializer = MonthlyStatisticsSerializer(stats)
-        return Response(serializer.data, status=HTTP_200_OK)
+        return custom_response(
+            status="success",
+            message="Monthly statistics retrieved successfully",
+            data=serializer.data,
+            status_code=HTTP_200_OK
+        )
