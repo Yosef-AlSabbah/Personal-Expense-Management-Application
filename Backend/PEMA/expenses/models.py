@@ -74,12 +74,12 @@ class Expense(models.Model):
 
     def __str__(self):
         """String representation of the expense object, displaying user, amount, and date."""
-        return f'{self.user} spent {self.amount} on {self.date}'
+        return f'{self.user} spent {self.amount:.2f} on {self.date}'
 
     @property
     def summary(self):
         """Provides a brief summary of the expense, for quick viewing."""
-        return f"Expense of {self.amount} in {self.category}"
+        return f"Expense of {self.amount:.2f} in {self.category}"
 
     class Meta:
         # Orders expenses by date, with the most recent first

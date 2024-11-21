@@ -2,7 +2,9 @@ from rest_framework import serializers
 
 
 class MonthlyStatisticsSerializer(serializers.Serializer):
-    """Serializer for monthly financial statistics, including total expenses, remaining balance, and average daily expenses."""
+    """
+    Serializer for monthly financial statistics, including total expenses, remaining balance, and average daily expenses.
+    """
 
     total_expenses = serializers.DecimalField(
         max_digits=10,

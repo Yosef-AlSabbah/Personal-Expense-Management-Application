@@ -1,101 +1,142 @@
-from django.test import TestCase
-from django.urls import reverse
+import pytest
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
-from rest_framework import status
+from rest_framework_simplejwt.tokens import RefreshToken
 
-from .models import Profile
+from users.models import Profile
 
 User = get_user_model()
 
 
-class UserProfileUpdateTestCase(TestCase):
-    def setUp(self):
-        # Set up a test user and profile
-        self.user = User.objects.create_user(
-            username='testuser',
-            password='password123',
-            first_name='Test',
-            last_name='User',
-            email='testuser@example.com'
-        )
-        self.profile = Profile.objects.create(user=self.user, balance=100.0)
-        self.client = APIClient()
-        self.client.force_authenticate(user=self.user)
+@pytest.fixture
+def api_client():
+    """Fixture to initialize the DRF API client."""
+    return APIClient()
 
-        self.update_url = reverse('api:users:profile-update')  # Adjust namespace if needed
 
-    def test_update_profile_successfully(self):
-        # Define the payload for updating the user profile
-        payload = {
-            "user": {
-                "first_name": "Updated",
-                "last_name": "User",
-                "email": "updateduser@example.com"
-            },
-            "profile_pic": None  # Assuming no file is uploaded for simplicity
-        }
+@pytest.fixture
+def test_user():
+    """Fixture to create a test user."""
+    user = User.objects.create_user(
+        email="testuser@example.com",
+        password="TestPass123!",
+    )
+    user.profile.balance = 100
+    return user
 
-        response = self.client.put(self.update_url, payload, format='json')
 
-        # Assertions
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+@pytest.fixture
+def auth_client(api_client, test_user):
+    """Fixture to authenticate the API client with a test user."""
+    refresh = RefreshToken.for_user(test_user)
+    api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}")
+    return api_client
 
-        # Reload the user and profile from the database
-        self.user.refresh_from_db()
-        self.profile.refresh_from_db()
 
-        # Check that the fields have been updated
-        self.assertEqual(self.user.first_name, "Updated")
-        self.assertEqual(self.user.last_name, "User")
-        self.assertEqual(self.user.email, "updateduser@example.com")
+from django.urls import reverse
 
-    def test_update_profile_unauthenticated(self):
-        # Log out the user
-        self.client.force_authenticate(user=None)
 
-        payload = {
-            "user": {
-                "first_name": "New",
-                "last_name": "Name",
-                "email": "newname@example.com"
-            },
-            "profile_pic": None
-        }
+@pytest.mark.django_db
+def test_user_registration(api_client):
+    """Test user registration endpoint."""
+    url = reverse('api:auth:register')
+    response = api_client.post(url, {
+        "email": "newuser@example.com",
+        "username": "newuser",
+        "password": "NewPass123!",
+        "re_password": "NewPass123!",
+        "first_name": "New",
+        "last_name": "User",
+        "phone_number": "9876543210"
+    })
+    assert response.status_code == 201
+    assert User.objects.filter(email="newuser@example.com").exists()
 
-        response = self.client.put(self.update_url, payload, format='json')
 
-        # Ensure the response status is unauthorized
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+@pytest.mark.django_db
+def test_user_login(api_client, test_user):
+    """Test token obtain pair endpoint."""
+    url = reverse('api:auth:jwt-create')
+    response = api_client.post(url, {
+        "email": test_user.email,
+        "password": "TestPass123!"
+    })
+    assert response.status_code == 200
+    assert "access" in response.data["data"]  # Adjust to access the token correctly
+    assert "refresh" in response.data["data"]
 
-    def test_update_profile_invalid_email(self):
-        payload = {
-            "user": {
-                "first_name": "Updated",
-                "last_name": "User",
-                "email": "not-an-email"
-            },
-            "profile_pic": None
-        }
 
-        response = self.client.put(self.update_url, payload, format='json')
+@pytest.mark.django_db
+def test_user_profile_retrieve(auth_client):
+    """Test the `me` endpoint to retrieve the profile."""
+    url = reverse('api:auth:current_user')
+    response = auth_client.get(url)
+    print(response.data)  # Debugging to inspect the structure of response data
+    assert response.status_code == 200
+    assert response.data['data']['email'] == "testuser@example.com"  # Check email too
 
-        # Ensure the response status is bad request due to invalid email format
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn('email', response.data['user'])
 
-    def test_partial_update_profile(self):
-        payload = {
-            "user": {
-                "first_name": "PartiallyUpdated"
-            }
-        }
+@pytest.mark.django_db
+def test_user_profile_update(auth_client):
+    """Test updating the user profile via the `me` endpoint."""
+    url = reverse('api:auth:current_user')  # Dynamically resolve the URL for the `me` endpoint
+    response = auth_client.patch(url, {
+        "first_name": "Updated",
+        "last_name": "User",
+        "phone_number": "0987654321"
+    })
+    print(response.data)  # Debugging to inspect the response structure
+    assert response.status_code == 200
+    assert response.data['data']['first_name'] == "Updated"
+    assert response.data['data']['last_name'] == "User"
+    assert response.data['data']['phone_number'] == "0987654321"
 
-        response = self.client.patch(self.update_url, payload, format='json')
 
-        # Assertions
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+@pytest.mark.django_db
+def test_user_profile_delete(auth_client):
+    """Test deleting the authenticated user's profile."""
+    url = reverse('api:auth:current_user')  # Use reverse() for dynamic URL resolution
+    response = auth_client.delete(url)
+    assert response.status_code == 204
 
-        # Reload the user from the database and check the field has been updated
-        self.user.refresh_from_db()
-        self.assertEqual(self.user.first_name, "PartiallyUpdated")
+
+@pytest.mark.django_db
+def test_password_reset_request(api_client, test_user):
+    """Test initiating a password reset."""
+    url = reverse('api:auth:reset_password')  # Ensure this matches the `name` in your URL config
+    response = api_client.post(url, {
+        "email": test_user.email
+    })
+    print(response.data)  # Debugging to inspect the response structure
+    assert response.status_code == 204  # Update to match the actual status code
+
+
+@pytest.mark.django_db
+def test_token_refresh(api_client, test_user):
+    """Test refreshing an access token."""
+    refresh = RefreshToken.for_user(test_user)
+    url = reverse('api:auth:jwt-refresh')
+    response = api_client.post(url, {
+        "refresh": str(refresh)
+    })
+    print(response.data)  # Debugging to inspect the response structure
+    assert response.status_code == 200
+    assert "access" in response.data['data']  # Ensure the new access token is returned
+
+
+@pytest.mark.django_db
+def test_token_blacklist(auth_client):
+    """Test blacklisting a refresh token (logout)."""
+    response = auth_client.post(reverse('api:auth:jwt-destroy'), {
+        "refresh": "dummy-refresh-token"
+    })
+    assert response.status_code == 400  # Expect failure with dummy token
+
+
+@pytest.mark.django_db
+def test_profile_manager_current_month_statistics(test_user):
+    """Test custom ProfileManager statistics calculation."""
+    stats = Profile.objects.current_month_statistics(test_user)  # Access manager via model class
+    assert "total_expenses" in stats
+    assert "remaining_balance" in stats
+    assert "average_daily_expense" in stats

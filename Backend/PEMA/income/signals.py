@@ -8,7 +8,7 @@ User = get_user_model()
 
 
 @receiver(post_save, sender=User)
-def create_income_for_user(sender, instance, created, **kwargs):
+def create_user_income(sender, instance, created, **kwargs):
     """Automatically create an Income entry for every new user."""
     if created:
-        Income.objects.create(user=instance)
+        Income.objects.create(user=instance, amount=0.00, description="Default income")

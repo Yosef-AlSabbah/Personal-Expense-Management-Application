@@ -9,6 +9,7 @@ https://docs.djangoproject.com/en/5.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
+import sys
 from datetime import timedelta
 from os import environ
 from pathlib import Path
@@ -318,6 +319,9 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
+
+if 'test' in sys.argv:
+    SIMPLE_HISTORY_ENABLED = False
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/

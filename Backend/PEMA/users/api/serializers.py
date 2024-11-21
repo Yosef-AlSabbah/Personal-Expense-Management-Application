@@ -8,9 +8,7 @@ User = get_user_model()
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
-    """
-    Serializer for handling the current user's profile, combining User and Profile fields.
-    """
+    """Serializer for handling the current user's profile, combining User and Profile fields."""
     # Serialize fields from the User model directly
     first_name = serializers.CharField(source="user.first_name", required=False)
     last_name = serializers.CharField(source="user.last_name", required=False)
@@ -42,9 +40,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
         return value
 
     def create(self, validated_data):
-        """
-        Create a new user and their profile.
-        """
+        """Create a new user and their profile."""
         user_data = validated_data.pop("user")
         profile_pic = validated_data.pop("profile_pic", None)
 
@@ -65,9 +61,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
         return profile
 
     def update(self, instance, validated_data):
-        """
-        Update the user's profile and associated user fields.
-        """
+        """Update the user's profile and associated user fields."""
         user_data = validated_data.pop("user", {})
         profile_pic = validated_data.pop("profile_pic", None)
 

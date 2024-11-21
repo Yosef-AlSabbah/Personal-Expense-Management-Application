@@ -6,9 +6,7 @@ from ..models import Income
 
 
 class IncomeSerializer(ModelSerializer):
-    """
-    Serializer for the Income model, including all fields with validation.
-    """
+    """Serializer for the Income model, including all fields with validation."""
     user = serializers.StringRelatedField(
         read_only=True,
         help_text="The user to whom this income entry belongs."
@@ -29,7 +27,8 @@ class IncomeSerializer(ModelSerializer):
     description = serializers.CharField(
         required=False,
         allow_blank=True,
-        help_text="A description or note for the income entry."
+        help_text="A description or note for the income entry.",
+        max_length=1000
     )
     summary = serializers.CharField(
         read_only=True,

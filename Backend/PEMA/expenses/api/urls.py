@@ -1,10 +1,13 @@
 from django.urls import path
 
+# Import views for expense management
 from .views import ExpenseCreateView
 
+# Application namespace to avoid conflicts
 app_name = 'expenses'
 
 urlpatterns = [
-    # Define URL patterns for the expenses app. Currently, it only contains a URL pattern for creating a new expense.
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ EXPENSES URLS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    # Endpoint to create a new expense
     path('create/', ExpenseCreateView.as_view(), name='expense-create'),
 ]
