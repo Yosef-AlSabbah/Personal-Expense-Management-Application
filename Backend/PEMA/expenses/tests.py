@@ -122,7 +122,7 @@ def test_expense_creation_insufficient_balance(auth_client, test_category, test_
     response = auth_client.post(url, payload, format="json")
 
     assert response.status_code == 400
-    assert "Insufficient balance" in response.data["message"]
+    assert response.data['errors'][0] == "Insufficient balance to cover this expense."
 
     # Ensure that the expense was not created
     assert not Expense.objects.filter(description="Expensive dinner").exists()

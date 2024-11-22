@@ -5,6 +5,7 @@ from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError, AuthenticationFailed
+from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import (
     TokenObtainPairView as BaseTokenObtainPairView,
@@ -121,8 +122,10 @@ class UserViewSet(BaseUserViewSet):
         tags=["User Authentication"],
         methods=['POST'],
         responses={
-            201: OpenApiResponse(description="User successfully registered."),
+            201: OpenApiResponse(
+                description="User successfully registered. Please check your email to activate your account."),
             400: OpenApiResponse(description="Invalid request."),
+            500: OpenApiResponse(description="An internal error occurred."),
         }
     )
     def create(self, request, *args, **kwargs):
@@ -134,23 +137,29 @@ class UserViewSet(BaseUserViewSet):
         """
         try:
             response = super().create(request, *args, **kwargs)
+
             return custom_response(
                 status="success",
-                message="User successfully registered",
+                message="User successfully registered. Please check your email to activate your account.",
                 data=response.data,
                 status_code=response.status_code,
             )
         except ValidationError as e:
             logger.error(f"Validation error during user registration: {e}")
             return custom_response(
-                status="error", message="Validation error", data={"errors": e.detail}, status_code=400
+                status="error",
+                message="Validation error occurred. Please check your input and try again.",
+                data=None,
+                errors=None,  # Do not expose raw errors to the user
+                status_code=400
             )
         except Exception as e:
             logger.error(f"Unexpected error during user registration: {e}", exc_info=True)
             return custom_response(
                 status="error",
                 message="An unexpected error occurred. Please try again later.",
-                data={},
+                data=None,
+                errors=None,  # Do not expose raw errors to the user
                 status_code=500,
             )
 
@@ -165,7 +174,9 @@ class UserViewSet(BaseUserViewSet):
         }
     )
     def activation(self, request, *args, **kwargs):
-        """Activate a user account using the activation key."""
+        """
+        Activate a user account using the activation key.
+        """
         try:
             response = super().activation(request, *args, **kwargs)
             return custom_response(
@@ -177,14 +188,17 @@ class UserViewSet(BaseUserViewSet):
         except ValidationError as e:
             logger.error(f"Activation error: {e}")
             return custom_response(
-                status="error", message="Invalid activation key", data={"errors": e.detail}, status_code=400
+                status="error",
+                message="Invalid activation key",
+                errors=e.detail,  # Moved error details to errors field
+                status_code=400,
             )
         except Exception as e:
             logger.error(f"Unexpected error during account activation: {e}", exc_info=True)
             return custom_response(
                 status="error",
                 message="An unexpected error occurred. Please try again later.",
-                data={},
+                errors=None,  # Hide sensitive details
                 status_code=500,
             )
 
@@ -201,9 +215,6 @@ class UserViewSet(BaseUserViewSet):
     def set_password(self, request, *args, **kwargs):
         """
         Set a new password for the authenticated user.
-
-        If the new password is valid, it will return a 200 response with a success message.
-        If the new password is invalid, it will return a 400 response with an error message.
         """
         try:
             response = super().set_password(request, *args, **kwargs)
@@ -216,14 +227,17 @@ class UserViewSet(BaseUserViewSet):
         except ValidationError as e:
             logger.error(f"Validation error during password update: {e}")
             return custom_response(
-                status="error", message="Invalid password input", data={"errors": e.detail}, status_code=400
+                status="error",
+                message="Invalid password input",
+                errors=e.detail,  # Moved error details to errors field
+                status_code=400,
             )
         except Exception as e:
             logger.error(f"Unexpected error during password update: {e}", exc_info=True)
             return custom_response(
                 status="error",
                 message="An unexpected error occurred. Please try again later.",
-                data={},
+                errors=None,  # Hide sensitive details
                 status_code=500,
             )
 
@@ -240,9 +254,6 @@ class UserViewSet(BaseUserViewSet):
     def reset_password(self, request, *args, **kwargs):
         """
         Initiate a password reset request.
-
-        If the email is valid, it will return a 200 response with a success message.
-        If the email is invalid, it will return a 400 response with an error message.
         """
         try:
             response = super().reset_password(request, *args, **kwargs)
@@ -257,7 +268,7 @@ class UserViewSet(BaseUserViewSet):
             return custom_response(
                 status="error",
                 message="Invalid email address provided.",
-                data={"errors": e.detail},
+                errors=e.detail,  # Moved error details to errors field
                 status_code=400,
             )
         except Exception as e:
@@ -265,7 +276,7 @@ class UserViewSet(BaseUserViewSet):
             return custom_response(
                 status="error",
                 message="An unexpected error occurred. Please try again later.",
-                data={},
+                errors=None,  # Hide sensitive details
                 status_code=500,
             )
 
@@ -282,9 +293,6 @@ class UserViewSet(BaseUserViewSet):
     def reset_password_confirm(self, request, *args, **kwargs):
         """
         Confirm a password reset using the token and new password.
-
-        If the token and password are valid, it will return a 200 response with a success message.
-        If the token or password are invalid, it will return a 400 response with an error message.
         """
         try:
             response = super().reset_password_confirm(request, *args, **kwargs)
@@ -299,7 +307,7 @@ class UserViewSet(BaseUserViewSet):
             return custom_response(
                 status="error",
                 message="Invalid token or password.",
-                data={"errors": e.detail},
+                errors=e.detail,  # Moved error details to errors field
                 status_code=400,
             )
         except Exception as e:
@@ -307,19 +315,14 @@ class UserViewSet(BaseUserViewSet):
             return custom_response(
                 status="error",
                 message="An unexpected error occurred. Please try again later.",
-                data={},
+                errors=None,  # Hide sensitive details
                 status_code=500,
             )
 
 
-# Extending existing token views
 class TokenObtainPairView(BaseTokenObtainPairView):
     """
     Handle POST requests to obtain a new pair of access and refresh tokens.
-
-    This method overrides the default POST behavior to provide a custom response
-    when a user successfully obtains tokens. The response includes a success message
-    and the token data. If the credentials are invalid, an error response is returned.
     """
 
     @extend_schema(
@@ -343,14 +346,17 @@ class TokenObtainPairView(BaseTokenObtainPairView):
         except AuthenticationFailed as e:
             logger.warning(f"Authentication failed: {e}")
             return custom_response(
-                status="error", message="Invalid credentials", data={}, status_code=400
+                status="error",
+                message="Invalid credentials",
+                errors=None,  # Do not expose sensitive information
+                status_code=400,
             )
         except Exception as e:
             logger.error(f"Unexpected error during token obtain: {e}", exc_info=True)
             return custom_response(
                 status="error",
                 message="An unexpected error occurred. Please try again later.",
-                data={},
+                errors=None,
                 status_code=500,
             )
 
@@ -358,11 +364,6 @@ class TokenObtainPairView(BaseTokenObtainPairView):
 class TokenRefreshView(BaseTokenRefreshView):
     """
     Handle POST requests to refresh an access token using a refresh token.
-
-    This endpoint is used to refresh an access token using a refresh token.
-    The request should contain a valid refresh token in the request body.
-    If the token is valid, it will return a 200 response with a new access token.
-    If the token is invalid or expired, it will return a 400 response with an error message.
     """
 
     @extend_schema(
@@ -383,17 +384,36 @@ class TokenRefreshView(BaseTokenRefreshView):
                 data=response.data,
                 status_code=response.status_code,
             )
+        except InvalidToken as e:
+            logger.warning(f"Invalid token error during token refresh: {e}")
+            return custom_response(
+                status="error",
+                message="The provided token is invalid or expired.",
+                errors=e.detail if hasattr(e, "detail") else {"detail": "Token not valid."},
+                status_code=400,
+            )
+        except TokenError as e:
+            logger.warning(f"Token error during token refresh: {e}")
+            return custom_response(
+                status="error",
+                message="There was a problem with the token.",
+                errors=e.detail if hasattr(e, "detail") else {"detail": "Token error."},
+                status_code=400,
+            )
         except ValidationError as e:
             logger.error(f"Validation error during token refresh: {e}")
             return custom_response(
-                status="error", message="Invalid refresh token", data={"errors": e.detail}, status_code=400
+                status="error",
+                message="Invalid refresh token.",
+                errors=e.detail,
+                status_code=400,
             )
         except Exception as e:
             logger.error(f"Unexpected error during token refresh: {e}", exc_info=True)
             return custom_response(
                 status="error",
                 message="An unexpected error occurred. Please try again later.",
-                data={},
+                errors=None,
                 status_code=500,
             )
 
@@ -401,10 +421,6 @@ class TokenRefreshView(BaseTokenRefreshView):
 class TokenVerifyView(BaseTokenVerifyView):
     """
     Verify if an access token is valid.
-
-    This endpoint is used to verify if an access token is valid or not.
-    If the token is valid, it will return a 200 response with a success message.
-    If the token is invalid or expired, it will return a 401 response with an error message.
     """
 
     @extend_schema(
@@ -425,17 +441,28 @@ class TokenVerifyView(BaseTokenVerifyView):
                 data=response.data,
                 status_code=response.status_code,
             )
-        except ValidationError as e:
-            logger.warning(f"Validation error during token verification: {e}")
+        except InvalidToken as e:
+            logger.warning(f"Invalid token error during token verification: {e}")
             return custom_response(
-                status="error", message="Token is invalid or expired", data={"errors": e.detail}, status_code=401
+                status="error",
+                message="The provided token is invalid or expired.",
+                errors=e.detail if hasattr(e, "detail") else {"detail": "Token not valid."},
+                status_code=401,
+            )
+        except TokenError as e:
+            logger.warning(f"Token error during token verification: {e}")
+            return custom_response(
+                status="error",
+                message="There was a problem with the token.",
+                errors=e.detail if hasattr(e, "detail") else {"detail": "Token error."},
+                status_code=401,
             )
         except Exception as e:
             logger.error(f"Unexpected error during token verification: {e}", exc_info=True)
             return custom_response(
                 status="error",
                 message="An unexpected error occurred. Please try again later.",
-                data={},
+                errors=None,
                 status_code=500,
             )
 
@@ -443,11 +470,6 @@ class TokenVerifyView(BaseTokenVerifyView):
 class TokenDestroyView(TokenBlacklistView):
     """
     Log out the user by blacklisting their refresh token.
-
-    This endpoint is used to log out the user by blacklisting their refresh token.
-    The request should contain a valid refresh token in the request body.
-    If the token is valid, it will return a 200 response with a success message.
-    If the token is invalid or expired, it will return a 400 response with an error message.
     """
     serializer_class = RefreshTokenSerializer
 
@@ -469,28 +491,40 @@ class TokenDestroyView(TokenBlacklistView):
             token = RefreshToken(refresh_token)
             token.blacklist()
             return custom_response(
-                {
-                    "status": "success",
-                    "message": "Successfully logged out",
-                    "data": None
-                },
-                status_code=status.HTTP_200_OK,
+                status="success",
+                message="Successfully logged out",
+                data=None,
+                status_code=status.HTTP_205_RESET_CONTENT,
+            )
+        except InvalidToken as e:
+            logger.warning(f"Invalid token error during logout: {e}")
+            return custom_response(
+                status="error",
+                message="The provided token is invalid.",
+                errors=e.detail if hasattr(e, "detail") else {"detail": "Token not valid."},
+                status_code=400,
+            )
+        except TokenError as e:
+            logger.warning(f"Token error during logout: {e}")
+            return custom_response(
+                status="error",
+                message="There was a problem with the token.",
+                errors=e.detail if hasattr(e, "detail") else {"detail": "Token error."},
+                status_code=400,
             )
         except ValidationError as e:
+            logger.error(f"Validation error during logout: {e}")
             return custom_response(
-                {
-                    "status": "error",
-                    "message": "Validation error",
-                    "data": {"errors": e.detail},
-                },
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status="error",
+                message="Invalid token provided.",
+                errors=e.detail,
+                status_code=400,
             )
-        except Exception:
+        except Exception as e:
+            logger.error(f"Unexpected error during logout: {e}", exc_info=True)
             return custom_response(
-                {
-                    "status": "error",
-                    "message": "Invalid token or request format",
-                    "data": None,
-                },
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status="error",
+                message="An unexpected error occurred. Please try again later.",
+                errors=None,
+                status_code=500,
             )

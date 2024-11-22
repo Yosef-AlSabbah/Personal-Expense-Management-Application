@@ -6,7 +6,6 @@ from django.db import IntegrityError
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 from rest_framework.exceptions import ValidationError, AuthenticationFailed, PermissionDenied
 from rest_framework.generics import CreateAPIView
-from rest_framework.permissions import IsAuthenticated
 
 from PEMA.utils.response_wrapper import custom_response
 from .serializers import ExpenseSerializer
@@ -46,43 +45,55 @@ class ExpenseCreateView(CreateAPIView):
                 data=response.data,
                 status_code=response.status_code,
             )
-        except (ValidationError, AuthenticationFailed, PermissionDenied) as e:
-            # Safe to show user-friendly validation/authentication errors
+        except ValidationError as e:
+            logger.warning(f"Validation error: {e}")
             return custom_response(
                 status="error",
-                message=str(e),
-                data={},
-                status_code=400 if isinstance(e, ValidationError) else 403,
+                message="Validation error occurred. Please check your input.",
+                errors=e.detail,  # Use errors field for validation issues
+                status_code=400,
+            )
+        except (AuthenticationFailed, PermissionDenied) as e:
+            logger.warning(f"Authentication or permission error: {e}")
+            return custom_response(
+                status="error",
+                message="You do not have permission to perform this action.",
+                errors=None,  # No sensitive details exposed
+                status_code=403,
             )
         except (IntegrityError, ObjectDoesNotExist, InvalidOperation) as e:
-            logger.error(f"Handled exception: {e}")  # Log the detailed error for debugging
+            logger.error(f"System error: {e}")  # Log the detailed error for debugging
             return custom_response(
                 status="error",
                 message="A system error occurred. Please contact support.",
-                data={},
+                errors=None,  # Hide implementation details
                 status_code=400,
             )
         except Exception as e:
-            logger.error(f"Unhandled exception: {e}", exc_info=True)  # Log stack trace for unhandled exceptions
+            logger.error(f"Unhandled exception: {e}", exc_info=True)  # Log stack trace for debugging
             return custom_response(
                 status="error",
                 message="An unexpected error occurred. Please try again later.",
-                data={},
+                errors=None,  # Hide unhandled exception details
                 status_code=500,
             )
 
     def perform_create(self, serializer):
-        """Assign the authenticated user as the owner of the expense entry,
-        and ensure the user's balance can cover the expense."""
+        """
+        Assign the authenticated user as the owner of the expense entry,
+        and ensure the user's balance can cover the expense.
+        """
         user = self.request.user
         profile = getattr(user, 'profile', None)  # Safely access profile
 
         if not profile:
+            logger.error("User profile is missing or incomplete.")
             raise ValidationError("User profile is missing or incomplete.")
 
         amount = serializer.validated_data.get('amount', Decimal(0))
 
         if not isinstance(amount, Decimal):
+            logger.error(f"Invalid amount type: {amount}")
             raise ValidationError("The amount must be a valid decimal number.")
 
         # Validate the user's balance
