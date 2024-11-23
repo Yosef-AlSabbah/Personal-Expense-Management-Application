@@ -146,13 +146,23 @@ class UserViewSet(BaseUserViewSet):
             )
         except ValidationError as e:
             logger.error(f"Validation error during user registration: {e}")
+
+            # Extract detailed error messages (only the message strings)
+            detailed_errors = {}
+            if hasattr(e, 'get_full_details'):
+                for field, error_list in e.get_full_details().items():
+                    detailed_errors[field] = [error['message'] for error in error_list]
+            else:
+                detailed_errors = str(e)
+
             return custom_response(
                 status="error",
                 message="Validation error occurred. Please check your input and try again.",
                 data=None,
-                errors=None,  # Do not expose raw errors to the user
-                status_code=400
+                errors=detailed_errors,
+                status_code=400,
             )
+
         except Exception as e:
             logger.error(f"Unexpected error during user registration: {e}", exc_info=True)
             return custom_response(

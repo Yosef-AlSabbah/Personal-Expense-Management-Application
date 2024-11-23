@@ -39,6 +39,21 @@ class UserProfileSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Profile picture size should not exceed 2MB.")
         return value
 
+    def validate_phone_number(self, value):
+        """
+        Validate the phone number format.
+        """
+        if not value:
+            return value  # Allow blank phone numbers if the field is optional
+
+        import re
+        pattern = r'^\+?1?\d{9,15}$'
+        if not re.match(pattern, value):
+            raise serializers.ValidationError(
+                "Phone number must be entered in the format: '+999999999'. Up to 15 digits allowed."
+            )
+        return value
+
     def create(self, validated_data):
         """Create a new user and their profile."""
         user_data = validated_data.pop("user")

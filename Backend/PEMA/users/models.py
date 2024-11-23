@@ -126,7 +126,15 @@ class UserAccount(AbstractBaseUser, PermissionsMixin):
                                     )
                                 ]
                                 )
-    phone_number = models.CharField(_('phone number'), max_length=15, unique=True, null=True, blank=True)
+    phone_number = models.CharField(_('phone number'), max_length=15, unique=True, null=True, blank=True,
+                                    validators=[
+                                        RegexValidator(
+                                            regex=r'^\+?1?\d{9,15}$',
+                                            message=_(
+                                                "Phone number must be entered in the format: '+999999999'. Up to 15 digits allowed."
+                                            ),
+                                        )
+                                    ], )
     first_name = models.CharField(_('first name'), max_length=30, blank=True)
     last_name = models.CharField(_('last name'), max_length=30, blank=True)
     profile_image = models.ImageField(_('profile image'), upload_to='profile_images/', null=True, blank=True)
