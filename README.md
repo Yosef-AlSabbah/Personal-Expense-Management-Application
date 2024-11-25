@@ -1,151 +1,174 @@
 # Personal Expense Management Backend with JWT Authentication
 
-**Author:** Yousef M. Y. AlSabbah  
-**Student ID:** 120212265  
-**Instructor:** Mohammed El-Agha
-
-A secure backend solution built with Django for personal expense management. This project provides APIs for tracking income and expenses, allowing for monthly summaries and insights. JWT (JSON Web Token) authentication ensures data security for each user.
+**Author**: [Yousef M. Y. AlSabbah](https://github.com/Yosef-AlSabbah)  
+**Student ID**: 120212265  
+**Instructor**: [Mohammed El-Agha](https://github.com/MohammedElagha)
 
 ---
 
 ## Table of Contents
-
-- [Project Overview](#project-overview)
-- [Features](#features)
-- [Technologies Used](#technologies-used)
-- [Installation](#installation)
-- [Usage](#usage)
-- [API Endpoints](#api-endpoints)
-- [Requirements](#requirements)
-- [License](#license)
+1. [Project Overview](#project-overview)
+2. [Features](#features)
+3. [Technologies Used](#technologies-used)
+4. [Installation and Setup](#installation-and-setup)
+5. [Environment Variables](#environment-variables)
+6. [Endpoints Documentation](#endpoints-documentation)
+7. [Best Practices and Highlights](#best-practices-and-highlights)
 
 ---
 
 ## Project Overview
 
-This project provides a backend solution for personal expense management with JWT-based authentication. Users can:
-- Track income and categorize expenses (transport, food, healthcare, etc.)
-- Retrieve monthly summaries and analytics
-- Securely manage their data with JWT authentication
+The Personal Expense Management Backend is a robust API solution designed using the Django REST Framework (DRF). This project provides users with seamless management of their financial records, including expenses, incomes, and reports. With state-of-the-art security, scalability, and performance optimizations, this backend is suitable for personal financial tracking.
+
+---
 
 ## Features
 
-- **JWT Authentication**: Secure user login and registration with JWT tokens.
-- **Income & Expense Tracking**: Record monthly income and categorize expenses.
-- **Monthly Summaries**: Retrieve data for income, expenses, and spending insights.
-- **RESTful API**: Well-structured API endpoints for easy integration into front-end apps.
+- **Authentication**: Utilizes JSON Web Tokens (JWT) with short-lived (15 minutes) access tokens and long-lived (7 days) refresh tokens.
+- **Email Verification**: Includes email-based account activation and password reset functionality.
+- **Secure Endpoints**: Implements strong validation and exception handling techniques.
+- **Simple History**: Tracks changes to models for audit purposes.
+- **API Documentation**: Auto-generated API documentation using `drf-spectacular`.
+- **Expense and Income Tracking**: Allows for categorization, update, and reporting of financial records.
+- **PostgreSQL Integration**: Uses PostgreSQL for database management.
+- **Scalable Architecture**: Well-structured codebase for scalability and maintainability.
+- **Asynchronous Tasks**: Supports scheduled tasks using Celery and Django Celery Beat.
+
+---
 
 ## Technologies Used
 
-- **Backend Framework**: Django (Python)
-- **Authentication**: JWT (JSON Web Tokens)
-- **Database**: SQLite (default, can be configured for other databases)
-- **Dependency Management**: Requirements file (`requirements.txt`)
+- **Framework**: Django 5.1.3
+- **Database**: PostgreSQL
+- **Authentication**: Djoser + JWT
+- **Task Queue**: Celery + Django Celery Beat
+- **API Standards**: DRF + drf-spectacular
+- **Testing**: Pytest
+- **Version Control**: Django Simple History
+- **Security**: CORS Headers + Environment Configuration
 
-## Installation
+---
+
+## Installation and Setup
 
 ### Prerequisites
+1. Install [Python](https://www.python.org/) (version >= 3.8).
+2. Install PostgreSQL.
 
-- Python 3.8 or higher
-- pip (Python package installer)
-
-### Step-by-Step Guide
-
-1. **Clone the Repository**
+### Installation Steps
+1. Clone the repository:
    ```bash
-   git clone <repository_url>
-   cd <repository_directory>
+   git clone https://github.com/Yosef-AlSabbah/Personal-Expense-Management-Application.git
+   cd Personal-Expense-Management-Application
    ```
 
-2. **Create a Virtual Environment**
+2. Create and activate a virtual environment:
    ```bash
-   python3 -m venv env
-   source env/bin/activate  # On Windows use `env\Scripts\activate`
+   python -m venv env
+   source env/bin/activate  # On Windows, use `env\Scripts\activate`
    ```
 
-3. **Install Dependencies**
+3. Install the dependencies:
    ```bash
    pip install -r requirements.txt
    ```
 
-4. **Set Up Environment Variables**
-   Create a `.env` file in the project root directory with the following variables:
-   ```bash
-   SECRET_KEY=your_secret_key_here
-   DEBUG=True
+4. Configure the `.env` file with the following variables:
+   ```env
+   DB_NAME=PEMA
+   DB_USER=django_client
+   DB_PASSWORD=0
+   DB_HOST=localhost
+   DB_PORT=5432
    ```
 
-5. **Apply Migrations**
+5. Run migrations to set up the database:
    ```bash
    python manage.py migrate
    ```
 
-6. **Run the Development Server**
+6. Start the development server:
    ```bash
    python manage.py runserver
    ```
-   Access the server at `http://127.0.0.1:8000`.
+
+### Testing
+- **Custom Settings**: Use the provided settings file for running tests.
+- Run the test suite:
+   ```bash
+   pytest
+   ```
 
 ---
 
-## Usage
+## Environment Variables
 
-1. **Register a New User**
-   Send a POST request to `/api/register` with user details to create a new account.
+This project relies on a `.env` file for sensitive configurations. Below are the required variables:
 
-2. **Log In**
-   Send a POST request to `/api/login` with credentials. A JWT token will be provided upon successful login.
-
-3. **Access Secured Endpoints**
-   Include the JWT token in the `Authorization` header as `Bearer <your_token>` to access protected endpoints.
-
----
-
-## API Endpoints
-
-### Authentication
-
-- **POST** `/api/register/`: Register a new user
-- **POST** `/api/login/`: Log in and obtain a JWT token
-
-### Income & Expenses
-
-- **POST** `/api/income/`: Add monthly income
-- **POST** `/api/expenses/`: Add an expense with category
-- **GET** `/api/summary/`: Retrieve monthly income and expense summaries
+- `DB_NAME` - PostgreSQL database name
+- `DB_USER` - Database user
+- `DB_PASSWORD` - Database password
+- `DB_HOST` - Database host (default: localhost)
+- `DB_PORT` - Database port (default: 5432)
 
 ---
 
-## Requirements
+## Endpoints Documentation
 
-All dependencies are listed in `requirements.txt`. Install them using:
+### User Management
 
-```bash
-pip install -r requirements.txt
-```
+| HTTP Method | Endpoint                 | Description                       |
+|-------------|--------------------------|-----------------------------------|
+| `GET`       | `/api/v1/auth/me/`       | Retrieve user profile            |
+| `PUT`       | `/api/v1/auth/me/`       | Update user profile              |
+| `PATCH`     | `/api/v1/auth/me/`       | Partially update user profile    |
+| `DELETE`    | `/api/v1/auth/me/`       | Delete user account              |
+
+### User Authentication
+
+| HTTP Method | Endpoint                       | Description                          |
+|-------------|--------------------------------|--------------------------------------|
+| `POST`      | `/api/v1/auth/register/`       | Register a new account              |
+| `POST`      | `/api/v1/auth/activate/`       | Activate account using email        |
+| `POST`      | `/api/v1/auth/token/obtain/`   | Login and obtain tokens             |
+| `POST`      | `/api/v1/auth/token/refresh/`  | Refresh access token                |
+| `POST`      | `/api/v1/auth/token/destroy/`  | Logout and destroy tokens           |
+| `POST`      | `/api/v1/auth/reset-password/` | Request password reset              |
+| `POST`      | `/api/v1/auth/reset-password-confirm/` | Confirm password reset      |
+
+### Expenses
+
+| HTTP Method | Endpoint                  | Description           |
+|-------------|---------------------------|-----------------------|
+| `POST`      | `/api/v1/expenses/create/` | Create a new expense  |
+
+### Income
+
+| HTTP Method | Endpoint                | Description                  |
+|-------------|-------------------------|------------------------------|
+| `PUT`       | `/api/v1/income/update/` | Update income record         |
+| `PATCH`     | `/api/v1/income/update/` | Partially update income record |
+
+### Reports
+
+| HTTP Method | Endpoint                                      | Description                         |
+|-------------|-----------------------------------------------|-------------------------------------|
+| `GET`       | `/api/v1/reports/expenses/monthly/`           | List monthly expenses              |
+| `GET`       | `/api/v1/reports/expenses/monthly/by-category/` | Categorized monthly expenses     |
+| `GET`       | `/api/v1/reports/monthly-statistics/`         | Monthly financial statistics        |
 
 ---
 
-## Running Tests
+## Best Practices and Highlights
 
-To run the test suite, use:
-
-```bash
-python manage.py test
-```
+1. **Exception Handling**: The project implements comprehensive exception handling techniques to ensure reliability.
+2. **Validation Techniques**: Strong validation is in place for inputs, ensuring data integrity and preventing vulnerabilities.
+3. **High Security**: JWT authentication and secure database configurations enhance security.
+4. **API Standards**: All responses follow a consistent and standardized format for better client integration.
+5. **Documentation**: Includes `drf-spectacular` for easily navigating the API endpoints.
 
 ---
 
 ## License
-
-This project is for educational purposes under the guidance of **Instructor: Mohammed El-Agha** and is not intended for commercial use.
-
----
-
-## Notes
-
-For animations and transitions in documentation, refer to GitHub's markdown-supported tools for rich formatting. Additionally, using external tools like **GitHub Pages** or **MkDocs** can provide a more interactive experience for documentation if hosted separately.
-
---- 
-
-This README provides a comprehensive guide, including installation, API usage, and instructions for running the project, ensuring ease of setup and understanding for developers who want to work with or build upon this backend solution.
+This project is for educational purposes under the guidance of Instructor: Mohammed El-Agha and is not intended for commercial use.
